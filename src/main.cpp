@@ -7,7 +7,9 @@
 #include <QLineEdit>
 #include <QString>
 #include <QObject>
-
+#include <QFrame>
+#include <QPixmap>
+#include <QScrollBar>
 #include <vector>
 
 #include <iostream>
@@ -70,35 +72,65 @@ void ClientNetwork::readUntil() {
 
 class Message : public QWidget {
     QLabel *content;
+    QLabel *uname;
+    QLabel *pfp;
+    QFrame *frame;
     QGridLayout *layout;
+    QGridLayout *fLayout;
 public:
     Message(QString cont) {
         layout = new QGridLayout();
         content = new QLabel(cont);
-        layout->addWidget(content, 0, 0);
+        frame = new QFrame();
+        fLayout = new QGridLayout();
+        
+        pfp = new QLabel();
+        pfp->setFixedWidth(48);
+        pfp->setFixedHeight(48);
+        pfp->setPixmap(QPixmap("test.png").scaledToWidth(48));
+        
+        uname = new QLabel("KingJellyfish");
+        
+        content->setWordWrap(true);
+        layout->setSpacing(0);
+        layout->addWidget(pfp, 0, 0, 1, 1);
+        layout->addWidget(frame, 0, 1, 2, 1);
+        fLayout->addWidget(uname, 0, 0, 1, 1);
+        fLayout->addWidget(content, 1, 0, 2, 1);
+        frame->setLayout(fLayout);
         setLayout(layout);
+        layout->setRowStretch(2, 1);
+        layout->setColumnStretch(2, 1);
     }
 };
 
-class MessageContainer : public QWidget {
+class MessageContainer : public QScrollArea {
     QVBoxLayout *layout;
+    QWidget *widget;
     std::vector<Message*> messages;
 public:
     MessageContainer() {
         layout = new QVBoxLayout();
-        setLayout(layout);
+        widget = new QWidget();
+
+        layout->addStretch();
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setWidgetResizable(true);
+        widget->setLayout(layout);
+        this->setWidget(widget);
     }
 
     void addMessage(Message* msg) {
         messages.push_back(msg);
         layout->addWidget(msg);
+        //verticalScrollBar()->setSliderPosition(verticalScrollBar()->maximum());
     }
 };
 
 class MainWindow : public QWidget {
     MessageContainer *cont;
     QLineEdit *input;
-    QScrollArea *scroll;
     QVBoxLayout *layout;
     ClientNetwork* net;
 public:
@@ -107,13 +139,7 @@ public:
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
         cont = new MessageContainer();
-
-        scroll = new QScrollArea();
-        scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        scroll->setWidgetResizable(false);
         
-        scroll->setWidget(cont);
         input = new QLineEdit();
         layout->addWidget(cont);
         layout->addWidget(input);
@@ -126,6 +152,7 @@ public:
 public slots:
     void handleButton() {
         net->sendRequest(input->text().toUtf8().constData());
+        cont->addMessage(new Message(input->text()));
         input->setText("");
     }
 
@@ -136,7 +163,7 @@ public slots:
 
 int main(int argc, char *argv[]) {
     ClientNetwork network;
-    network.connect("192.168.1.131", 2345);
+    network.connect("127.0.0.1", 2345);
     
     QApplication app(argc, argv);
     MainWindow window(&network);

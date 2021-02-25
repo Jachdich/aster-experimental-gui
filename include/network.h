@@ -13,7 +13,6 @@ public:
     inline ClientNetwork() : ssl_ctx(asio::ssl::context::tlsv12_client), socket(ctx, ssl_ctx) {
         
     }
-    virtual ~ClientNetwork() {};
 
 signals:
     void msgRecvd(QString msg);
