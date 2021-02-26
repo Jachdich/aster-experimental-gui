@@ -1,11 +1,14 @@
+#ifndef __NETWORK_H
+#define __NETWORK_H
 #include <QString>
 #include <QObject>
 #include <asio.hpp>
 #include <asio/ssl.hpp>
 #include <string>
+#include <nlohmann/json.hpp>
 
-#ifndef __NETWORK_H
-#define __NETWORK_H
+// for convenience
+using json = nlohmann::json;
 
 class ClientNetwork : public QObject {
     Q_OBJECT

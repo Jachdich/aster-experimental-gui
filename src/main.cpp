@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <iostream>
+#include <fstream>
+
 #include "network.h"
 
 using asio::ip::tcp;
@@ -78,7 +80,7 @@ class Message : public QWidget {
     QGridLayout *layout;
     QGridLayout *fLayout;
 public:
-    Message(QString cont) {
+    Message(QString unamestr, QString cont) {
         layout = new QGridLayout();
         content = new QLabel(cont);
         frame = new QFrame();
@@ -89,7 +91,7 @@ public:
         pfp->setFixedHeight(48);
         pfp->setPixmap(QPixmap("test.png").scaledToWidth(48));
         
-        uname = new QLabel("KingJellyfish");
+        uname = new QLabel(unamestr);
         
         content->setWordWrap(true);
         layout->setSpacing(0);
@@ -113,7 +115,10 @@ public:
         layout = new QVBoxLayout();
         widget = new QWidget();
 
-        layout->addStretch();
+        QScrollBar* scrollbar = verticalScrollBar();
+        connect(scrollbar, &QScrollBar::rangeChanged, this, &MessageContainer::sliderRangeChanged);
+
+        layout->addStretch(1);
         setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
         setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         setWidgetResizable(true);
@@ -124,7 +129,14 @@ public:
     void addMessage(Message* msg) {
         messages.push_back(msg);
         layout->addWidget(msg);
-        //verticalScrollBar()->setSliderPosition(verticalScrollBar()->maximum());
+   //     ensureWidgetVisible(msg);
+    }
+
+public slots:
+    void sliderRangeChanged(int min, int max) {
+        //Q_UNUSED(min);
+        QScrollBar *bar = verticalScrollBar();
+        bar->setValue(max);
     }
 };
 
@@ -152,18 +164,31 @@ public:
 public slots:
     void handleButton() {
         net->sendRequest(input->text().toUtf8().constData());
-        cont->addMessage(new Message(input->text()));
+        cont->addMessage(new Message("KingJellyfish", input->text()));
         input->setText("");
     }
 
-    void handleNetwork(QString msg) {
-        cont->addMessage(new Message(msg));
+    void handleNetwork(QString data) {
+        json msg = json::parse(data.toUtf8().constData());
+        cont->addMessage(new Message(
+            QString::fromStdString(msg["username"].get<std::string>()),
+            QString::fromStdString(msg["message"].get<std::string>())));
     }
 };
+
+void init(ClientNetwork *net) {
+    std::ifstream ifs("preferences.json");
+    std::string content((std::istreambuf_iterator<char>(ifs)),
+                        (std::istreambuf_iterator<char>()));
+    json value = json::parse(content);
+    std::string uname = value["username"].get<std::string>();
+    net->sendRequest("/nick " + uname);
+}
 
 int main(int argc, char *argv[]) {
     ClientNetwork network;
     network.connect("127.0.0.1", 2345);
+    init(&network);
     
     QApplication app(argc, argv);
     MainWindow window(&network);
