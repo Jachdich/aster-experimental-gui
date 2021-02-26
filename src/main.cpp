@@ -131,6 +131,7 @@ public:
         layout->addWidget(msg);
    //     ensureWidgetVisible(msg);
     }
+    
 
 public slots:
     void sliderRangeChanged(int min, int max) {
@@ -170,9 +171,21 @@ public slots:
 
     void handleNetwork(QString data) {
         json msg = json::parse(data.toUtf8().constData());
-        cont->addMessage(new Message(
-            QString::fromStdString(msg["username"].get<std::string>()),
-            QString::fromStdString(msg["message"].get<std::string>())));
+        if (!msg["res"].is_null()) {
+            uint32_t pos = 0;
+            for (auto &elem : msg["res"]) {
+                cont->insertMessage(pos++, new Message(
+                    QString::fromStdString(elem["user"]["name"].get<std::string>()), //TODO make other one like this
+                    QString::fromStdString(elem["message"].get<std::string>())));
+            }
+        } else if (!msg["message"].is_null()) {
+            cont->addMessage(new Message(
+                QString::fromStdString(msg["username"].get<std::string>()),
+                QString::fromStdString(msg["message"].get<std::string>())));
+        } else {
+            //???
+            //ignore for now
+        }
     }
 };
 
