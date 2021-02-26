@@ -72,6 +72,16 @@ void ClientNetwork::readUntil() {
     });
 }
 
+void init(ClientNetwork *net) {
+    std::ifstream ifs("preferences.json");
+    std::string content((std::istreambuf_iterator<char>(ifs)),
+                        (std::istreambuf_iterator<char>()));
+    json value = json::parse(content);
+    std::string uname = value["username"].get<std::string>();
+    //net->sendRequest("/nick " + uname);
+    net->sendRequest("/history 0 100");
+}
+
 class Message : public QWidget {
     QLabel *content;
     QLabel *uname;
@@ -131,7 +141,12 @@ public:
         layout->addWidget(msg);
    //     ensureWidgetVisible(msg);
     }
-    
+
+    void insertMessage(uint32_t idx, Message* msg) {
+        auto itPos = messages.begin() + idx;
+        messages.insert(itPos, msg);
+        layout->insertWidget(idx + 1, msg);
+    }
 
 public slots:
     void sliderRangeChanged(int min, int max) {
@@ -149,6 +164,7 @@ class MainWindow : public QWidget {
 public:
     MainWindow(ClientNetwork* network) {
         net = network;
+        init(network);
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
         cont = new MessageContainer();
@@ -171,12 +187,13 @@ public slots:
 
     void handleNetwork(QString data) {
         json msg = json::parse(data.toUtf8().constData());
+        std::cout << data.toUtf8().constData() << "\n";
         if (!msg["res"].is_null()) {
             uint32_t pos = 0;
             for (auto &elem : msg["res"]) {
                 cont->insertMessage(pos++, new Message(
                     QString::fromStdString(elem["user"]["name"].get<std::string>()), //TODO make other one like this
-                    QString::fromStdString(elem["message"].get<std::string>())));
+                    QString::fromStdString(elem["content"].get<std::string>())));
             }
         } else if (!msg["message"].is_null()) {
             cont->addMessage(new Message(
@@ -189,19 +206,9 @@ public slots:
     }
 };
 
-void init(ClientNetwork *net) {
-    std::ifstream ifs("preferences.json");
-    std::string content((std::istreambuf_iterator<char>(ifs)),
-                        (std::istreambuf_iterator<char>()));
-    json value = json::parse(content);
-    std::string uname = value["username"].get<std::string>();
-    net->sendRequest("/nick " + uname);
-}
-
 int main(int argc, char *argv[]) {
     ClientNetwork network;
     network.connect("127.0.0.1", 2345);
-    init(&network);
     
     QApplication app(argc, argv);
     MainWindow window(&network);
