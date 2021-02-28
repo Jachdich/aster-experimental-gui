@@ -188,6 +188,7 @@ public slots:
     void handleNetwork(QString data) {
         json msg = json::parse(data.toUtf8().constData());
         std::cout << data.toUtf8().constData() << "\n";
+        /*
         if (!msg["res"].is_null()) {
             uint32_t pos = 0;
             for (auto &elem : msg["res"]) {
@@ -202,7 +203,7 @@ public slots:
         } else {
             //???
             //ignore for now
-        }
+        }*/
     }
 };
 
