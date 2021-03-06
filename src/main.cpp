@@ -84,35 +84,25 @@ void init(ClientNetwork *net) {
 
 class Message : public QWidget {
     QLabel *content;
-    QLabel *uname;
     QLabel *pfp;
-    QFrame *frame;
     QGridLayout *layout;
-    QGridLayout *fLayout;
 public:
     Message(QString unamestr, QString cont) {
         layout = new QGridLayout();
-        content = new QLabel(cont);
-        frame = new QFrame();
-        fLayout = new QGridLayout();
+        content = new QLabel(" " + unamestr + ": " + cont);
         
         pfp = new QLabel();
-        pfp->setFixedWidth(48);
-        pfp->setFixedHeight(48);
-        pfp->setPixmap(QPixmap("test.png").scaledToWidth(48));
-        
-        uname = new QLabel(unamestr);
-        
+        pfp->setFixedWidth(32);
+        pfp->setFixedHeight(32);
+        pfp->setPixmap(QPixmap("test.png").scaledToWidth(32));
+
         content->setWordWrap(true);
         layout->setSpacing(0);
         layout->addWidget(pfp, 0, 0, 1, 1);
-        layout->addWidget(frame, 0, 1, 2, 1);
-        fLayout->addWidget(uname, 0, 0, 1, 1);
-        fLayout->addWidget(content, 1, 0, 2, 1);
-        frame->setLayout(fLayout);
+        layout->addWidget(content, 0, 1, 1, 1);
         setLayout(layout);
-        layout->setRowStretch(2, 1);
-        layout->setColumnStretch(2, 1);
+        layout->setRowStretch(1, 1);
+        layout->setColumnStretch(1, 1);
     }
 };
 
@@ -129,6 +119,7 @@ public:
         connect(scrollbar, &QScrollBar::rangeChanged, this, &MessageContainer::sliderRangeChanged);
 
         layout->addStretch(1);
+        layout->setSpacing(0);
         setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
         setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         setWidgetResizable(true);
@@ -156,6 +147,23 @@ public slots:
     }
 };
 
+std::string replaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
+}
+
+std::string formatStyleSheets(std::string ssheet) {
+    std::string dark = "#2a2a2a";
+    std::string light = "#555555";
+    std::string fg = "#cccccc";
+    std::string bg = "#333333";
+    return replaceAll(replaceAll(replaceAll(replaceAll(ssheet, "{fg}", fg), "{bg}", bg), "{light}", light), "{dark}", dark);
+}
+
 class MainWindow : public QWidget {
     MessageContainer *cont;
     QLineEdit *input;
@@ -164,6 +172,120 @@ class MainWindow : public QWidget {
 public:
     MainWindow(ClientNetwork* network) {
         net = network;
+
+        setStyleSheet(QString::fromStdString(formatStyleSheets(R"(QWidget {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QTreeView {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QScrollBar:vertical {
+            border: 2px solid {dark};
+            border-right: 1px solid {dark};
+            background: {bg};
+            width: 15px;
+            margin: 0px 0px 0px 0px;
+        }
+        
+        QScrollBar::handle:vertical {
+            background: {light};
+            min-height: 20px;
+            border-radius: 5px;
+        }
+        
+        QScrollBar::add-line:vertical {
+            border: 0px solid {dark};
+            background: {bg};
+            height: 0px;
+            subcontrol-position: bottom;
+            subcontrol-origin: margin;
+        }
+        
+        QScrollBar::sub-line:vertical {
+            border: 0px solid {dark};
+            background: {bg};
+            height: 0px;
+            subcontrol-position: top;
+            subcontrol-origin: margin;
+        }
+        
+        QScrollBar:horizontal {
+            border: 2px solid {dark};
+            border-bottom: 1px solid {dark};
+            background: {bg};
+            height: 15px;
+            margin: 0px 0px 0px 0px;
+        }
+        
+        QScrollBar::handle:horizontal {
+            background: {light};
+            min-width: 20px;
+            border-radius: 5px;
+        }
+        
+        QScrollBar::add-line:horizontal {
+            border: 0px solid black;
+            background: #000000;
+            width: 0px;
+            subcontrol-position: right;
+            subcontrol-origin: margin;
+        }
+        
+        QScrollBar::sub-line:horizontal {
+            border: 0px solid black;
+            background: #000000;
+            width: 0px;
+            subcontrol-position: left;
+            subcontrol-origin: margin;
+        }
+        
+        QFrame {
+            background-color: {dark};
+            color: {fg};
+        }
+        
+        QMenuBar {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QTabWidget {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QTabBar {
+            color: {fg};
+            background-color: {bg};
+        }
+        
+        QPlainTextEdit {
+            background-color: {bg};
+            color: {fg};
+            font-family: Courier;
+        /*    font-size: 18px;*/
+        }
+        
+        
+        QPushButton {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QScrollArea {
+            background-color: {bg};
+            color: {fg};
+        }
+        
+        QLabel {
+            font-size: 12px;
+        /*    padding: 2px; TODO make this work*/
+        })")));
+        
         init(network);
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
@@ -187,8 +309,7 @@ public slots:
 
     void handleNetwork(QString data) {
         json msg = json::parse(data.toUtf8().constData());
-        std::cout << data.toUtf8().constData() << "\n";
-        /*
+        //std::cout << data.toUtf8().constData() << "\n";
         if (!msg["res"].is_null()) {
             uint32_t pos = 0;
             for (auto &elem : msg["res"]) {
@@ -196,14 +317,14 @@ public slots:
                     QString::fromStdString(elem["user"]["name"].get<std::string>()), //TODO make other one like this
                     QString::fromStdString(elem["content"].get<std::string>())));
             }
-        } else if (!msg["message"].is_null()) {
+        } else if (!msg["content"].is_null()) {
             cont->addMessage(new Message(
-                QString::fromStdString(msg["username"].get<std::string>()),
-                QString::fromStdString(msg["message"].get<std::string>())));
+                QString::fromStdString(msg["user"]["name"].get<std::string>()),
+                QString::fromStdString(msg["content"].get<std::string>())));
         } else {
             //???
             //ignore for now
-        }*/
+        }
     }
 };
 
