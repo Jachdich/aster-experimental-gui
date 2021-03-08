@@ -314,12 +314,12 @@ public slots:
             uint32_t pos = 0;
             for (auto &elem : msg["res"]) {
                 cont->insertMessage(pos++, new Message(
-                    QString::fromStdString(elem["user"]["name"].get<std::string>()), //TODO make other one like this
+                    QString::fromStdString(std::to_string(elem["user"].get<uint64_t>())), //TODO make other one like this
                     QString::fromStdString(elem["content"].get<std::string>())));
             }
         } else if (!msg["content"].is_null()) {
             cont->addMessage(new Message(
-                QString::fromStdString(msg["user"]["name"].get<std::string>()),
+                QString::fromStdString(std::to_string(msg["user"].get<uint64_t>())),
                 QString::fromStdString(msg["content"].get<std::string>())));
         } else {
             //???
