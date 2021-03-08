@@ -2661,6 +2661,7 @@ class exception : public std::exception
     template<typename BasicJsonType>
     static std::string diagnostics(const BasicJsonType& leaf_element)
     {
+    (void)leaf_element;
 #if JSON_DIAGNOSTICS
         std::vector<std::string> tokens;
         for (const auto* current = &leaf_element; current->m_parent != nullptr; current = current->m_parent)

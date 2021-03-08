@@ -141,7 +141,7 @@ public:
 
 public slots:
     void sliderRangeChanged(int min, int max) {
-        //Q_UNUSED(min);
+        (void)min;
         QScrollBar *bar = verticalScrollBar();
         bar->setValue(max);
     }
@@ -164,127 +164,45 @@ std::string formatStyleSheets(std::string ssheet) {
     return replaceAll(replaceAll(replaceAll(replaceAll(ssheet, "{fg}", fg), "{bg}", bg), "{light}", light), "{dark}", dark);
 }
 
+struct Metadata {
+    uint64_t uuid;
+    std::string uname;
+    std::string pfp_b64;
+    static Metadata from_json(json value) {
+        return {value["uuid"].get<uint64_t>(),
+                value["name"].get<std::string>(),
+                value["pfp"].get<std::string>()};
+    }
+};
+
+class MainWindow;
+class Client {
+private:
+    Metadata meta;
+    std::unordered_map<uint32_t, Metadata> peers; //TODO per-server in future
+public:
+    void handleNetwork(QString data, MainWindow *parent);
+    QString getName() {
+        return QString::fromStdString(meta.uname);
+    }
+};
+
 class MainWindow : public QWidget {
     MessageContainer *cont;
     QLineEdit *input;
     QVBoxLayout *layout;
     ClientNetwork* net;
+    Client client;
+    
 public:
     MainWindow(ClientNetwork* network) {
         net = network;
 
-        setStyleSheet(QString::fromStdString(formatStyleSheets(R"(QWidget {
-            background-color: {bg};
-            color: {fg};
-        }
+        std::ifstream ifs("stylesheet.qss");
+        std::string ss((std::istreambuf_iterator<char>(ifs)),
+                       (std::istreambuf_iterator<char>()));
         
-        QTreeView {
-            background-color: {bg};
-            color: {fg};
-        }
-        
-        QScrollBar:vertical {
-            border: 2px solid {dark};
-            border-right: 1px solid {dark};
-            background: {bg};
-            width: 15px;
-            margin: 0px 0px 0px 0px;
-        }
-        
-        QScrollBar::handle:vertical {
-            background: {light};
-            min-height: 20px;
-            border-radius: 5px;
-        }
-        
-        QScrollBar::add-line:vertical {
-            border: 0px solid {dark};
-            background: {bg};
-            height: 0px;
-            subcontrol-position: bottom;
-            subcontrol-origin: margin;
-        }
-        
-        QScrollBar::sub-line:vertical {
-            border: 0px solid {dark};
-            background: {bg};
-            height: 0px;
-            subcontrol-position: top;
-            subcontrol-origin: margin;
-        }
-        
-        QScrollBar:horizontal {
-            border: 2px solid {dark};
-            border-bottom: 1px solid {dark};
-            background: {bg};
-            height: 15px;
-            margin: 0px 0px 0px 0px;
-        }
-        
-        QScrollBar::handle:horizontal {
-            background: {light};
-            min-width: 20px;
-            border-radius: 5px;
-        }
-        
-        QScrollBar::add-line:horizontal {
-            border: 0px solid black;
-            background: #000000;
-            width: 0px;
-            subcontrol-position: right;
-            subcontrol-origin: margin;
-        }
-        
-        QScrollBar::sub-line:horizontal {
-            border: 0px solid black;
-            background: #000000;
-            width: 0px;
-            subcontrol-position: left;
-            subcontrol-origin: margin;
-        }
-        
-        QFrame {
-            background-color: {dark};
-            color: {fg};
-        }
-        
-        QMenuBar {
-            background-color: {bg};
-            color: {fg};
-        }
-        
-        QTabWidget {
-            background-color: {bg};
-            color: {fg};
-        }
-        
-        QTabBar {
-            color: {fg};
-            background-color: {bg};
-        }
-        
-        QPlainTextEdit {
-            background-color: {bg};
-            color: {fg};
-            font-family: Courier;
-        /*    font-size: 18px;*/
-        }
-        
-        
-        QPushButton {
-            background-color: {bg};
-            color: {fg};
-        }
-        
-        QScrollArea {
-            background-color: {bg};
-            color: {fg};
-        }
-        
-        QLabel {
-            font-size: 12px;
-        /*    padding: 2px; TODO make this work*/
-        })")));
+        setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
         
         init(network);
         setWindowTitle("Aster experimental GUI client");
@@ -300,33 +218,57 @@ public:
         show();
     }
 
+    void addMessage(Message *msg) {
+        cont->addMessage(msg);
+    }
+
+    void insertMessage(uint32_t pos, Message *msg) {
+        cont->insertMessage(pos, msg);
+    }
+
 public slots:
     void handleButton() {
         net->sendRequest(input->text().toUtf8().constData());
-        cont->addMessage(new Message("KingJellyfish", input->text()));
+        cont->addMessage(new Message(client.getName(), input->text()));
         input->setText("");
     }
 
     void handleNetwork(QString data) {
-        json msg = json::parse(data.toUtf8().constData());
-        //std::cout << data.toUtf8().constData() << "\n";
-        if (!msg["res"].is_null()) {
-            uint32_t pos = 0;
-            for (auto &elem : msg["res"]) {
-                cont->insertMessage(pos++, new Message(
-                    QString::fromStdString(std::to_string(elem["user"].get<uint64_t>())), //TODO make other one like this
-                    QString::fromStdString(elem["content"].get<std::string>())));
-            }
-        } else if (!msg["content"].is_null()) {
-            cont->addMessage(new Message(
-                QString::fromStdString(std::to_string(msg["user"].get<uint64_t>())),
-                QString::fromStdString(msg["content"].get<std::string>())));
-        } else {
-            //???
-            //ignore for now
-        }
+        client.handleNetwork(data, this);
     }
 };
+
+void Client::handleNetwork(QString data, MainWindow *parent) {
+    json msg = json::parse(data.toUtf8().constData());
+    std::cout << data.toUtf8().constData() << "\n";
+    if (!msg["history"].is_null()) {
+        uint32_t pos = 0;
+        for (auto &elem : msg["history"]) {
+            parent->insertMessage(pos++, new Message(
+                QString::fromStdString(std::to_string(elem["user"].get<uint64_t>())), //TODO make other one like this
+                QString::fromStdString(elem["content"].get<std::string>())));
+        }
+    } else if (!msg["command"].is_null()) {
+        if (msg["command"].get<std::string>() == "set") {
+            if (msg["key"].get<std::string>() == "self_uuid") {
+                meta.uuid = msg["value"].get<uint64_t>();
+                std::cout << meta.uuid << "\n";
+            }
+        } else if (msg["command"].get<std::string>() == "metadata") {
+            peers.clear();
+            for (auto &elem : msg["data"]) {
+                peers[elem["uuid"].get<uint64_t>()] = Metadata::from_json(elem);
+            }
+        }
+    } else if (!msg["content"].is_null()) {
+        parent->addMessage(new Message(
+            QString::fromStdString(peers[msg["user"].get<uint64_t>()].uname),
+            QString::fromStdString(msg["content"].get<std::string>())));
+    } else {
+        //???
+        //ignore for now
+    }
+}
 
 int main(int argc, char *argv[]) {
     ClientNetwork network;
@@ -337,3 +279,7 @@ int main(int argc, char *argv[]) {
 
     return app.exec();
 }
+
+
+//One 3193709851413311828
+//two 1851050229929352744
