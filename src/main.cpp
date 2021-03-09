@@ -10,12 +10,14 @@
 #include <QFrame>
 #include <QPixmap>
 #include <QScrollBar>
+#include <QByteArray>
 #include <vector>
 
 #include <iostream>
 #include <fstream>
 
 #include "network.h"
+#include "base64.h"
 
 using asio::ip::tcp;
 
@@ -87,14 +89,14 @@ class Message : public QWidget {
     QLabel *pfp;
     QGridLayout *layout;
 public:
-    Message(QString unamestr, QString cont) {
+    Message(QString unamestr, QString cont, QPixmap *pfpPixmap) {
         layout = new QGridLayout();
         content = new QLabel(" " + unamestr + ": " + cont);
         
         pfp = new QLabel();
         pfp->setFixedWidth(32);
         pfp->setFixedHeight(32);
-        pfp->setPixmap(QPixmap("test.png").scaledToWidth(32));
+        pfp->setPixmap(pfpPixmap->scaledToWidth(32));
 
         content->setWordWrap(true);
         layout->setSpacing(0);
@@ -168,10 +170,18 @@ struct Metadata {
     uint64_t uuid;
     std::string uname;
     std::string pfp_b64;
+    QPixmap *pfp;
     static Metadata from_json(json value) {
+        std::string pfp_b64_json = value["pfp"].get<std::string>();
+        std::vector<uint8_t> buf = base64_decode(pfp_b64_json);
+        QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
+        QPixmap* pixMap = new QPixmap();
+        pixMap->loadFromData(data, "PNG");
         return {value["uuid"].get<uint64_t>(),
                 value["name"].get<std::string>(),
-                value["pfp"].get<std::string>()};
+                pfp_b64_json,
+                pixMap
+                };
     }
 };
 
@@ -181,9 +191,15 @@ private:
     Metadata meta;
     std::unordered_map<uint32_t, Metadata> peers; //TODO per-server in future
 public:
+    Client() {
+        meta.pfp = new QPixmap("test.png");
+    }
     void handleNetwork(QString data, MainWindow *parent);
     QString getName() {
         return QString::fromStdString(meta.uname);
+    }
+    QPixmap *getPfp() {
+        return meta.pfp;
     }
 };
 
@@ -192,9 +208,9 @@ class MainWindow : public QWidget {
     QLineEdit *input;
     QVBoxLayout *layout;
     ClientNetwork* net;
-    Client client;
     
 public:
+    Client client;
     MainWindow(ClientNetwork* network) {
         net = network;
 
@@ -229,7 +245,7 @@ public:
 public slots:
     void handleButton() {
         net->sendRequest(input->text().toUtf8().constData());
-        cont->addMessage(new Message(client.getName(), input->text()));
+        cont->addMessage(new Message(client.getName(), input->text(), client.getPfp()));
         input->setText("");
     }
 
@@ -246,7 +262,8 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
         for (auto &elem : msg["history"]) {
             parent->insertMessage(pos++, new Message(
                 QString::fromStdString(std::to_string(elem["user"].get<uint64_t>())), //TODO make other one like this
-                QString::fromStdString(elem["content"].get<std::string>())));
+                QString::fromStdString(elem["content"].get<std::string>()),
+                peers[msg["user"].get<uint64_t>()].pfp));
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
@@ -263,7 +280,8 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
     } else if (!msg["content"].is_null()) {
         parent->addMessage(new Message(
             QString::fromStdString(peers[msg["user"].get<uint64_t>()].uname),
-            QString::fromStdString(msg["content"].get<std::string>())));
+            QString::fromStdString(msg["content"].get<std::string>()),
+            peers[msg["user"].get<uint64_t>()].pfp));
     } else {
         //???
         //ignore for now

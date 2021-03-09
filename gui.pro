@@ -20,4 +20,4 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Input
 HEADERS += include/network.h
-SOURCES += src/main.cpp
+SOURCES += src/main.cpp src/base64.cpp
