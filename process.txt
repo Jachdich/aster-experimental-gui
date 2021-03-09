@@ -1,0 +1,44 @@
+#44
+{"content":"as","user":1851050229929352744}
+46
+{"content":"feag","user":1851050229929352744}
+53
+{"content":"Interesting","user":1851050229929352744}
+3193709851413311828
+
+Thread 1 "gui" received signal SIGSEGV, Segmentation fault.
+0x00007ffff708ab70 in QPixmap::isNull() const () from /usr/lib/libQt5Gui.so.5
+(gdb) backtrace
+#0  0x00007ffff708ab70 in QPixmap::isNull() const () from /usr/lib/libQt5Gui.so.5
+#1  0x00007ffff708bef0 in QPixmap::scaledToWidth(int, Qt::TransformationMode) const () from /usr/lib/libQt5Gui.so.5
+#2  0x00005555555885e1 in Message::Message (this=0x5555558476e0, unamestr=..., cont=..., pfpPixmap=0x0) at src/main.cpp:100
+#3  0x0000555555588957 in MainWindow::handleButton (this=0x7fffffffde60) at src/main.cpp:247
+#4  0x00007ffff6c64d86 in ?? () from /usr/lib/libQt5Core.so.5
+#5  0x00007ffff6c64dc0 in ?? () from /usr/lib/libQt5Core.so.5
+#6  0x00007ffff7845742 in QWidgetLineControl::processKeyEvent(QKeyEvent*) () from /usr/lib/libQt5Widgets.so.5
+#7  0x00007ffff78396dc in QLineEdit::keyPressEvent(QKeyEvent*) () from /usr/lib/libQt5Widgets.so.5
+#8  0x00007ffff77379c5 in QWidget::event(QEvent*) () from /usr/lib/libQt5Widgets.so.5
+#9  0x00007ffff76f5752 in QApplicationPrivate::notify_helper(QObject*, QEvent*) () from /usr/lib/libQt5Widgets.so.5
+#10 0x00007ffff76fcdb8 in QApplication::notify(QObject*, QEvent*) () from /usr/lib/libQt5Widgets.so.5
+#11 0x00007ffff6c2da2a in QCoreApplication::notifyInternal2(QObject*, QEvent*) () from /usr/lib/libQt5Core.so.5
+#12 0x00007ffff775269a in ?? () from /usr/lib/libQt5Widgets.so.5
+#13 0x00007ffff76f5752 in QApplicationPrivate::notify_helper(QObject*, QEvent*) () from /usr/lib/libQt5Widgets.so.5
+#14 0x00007ffff6c2da2a in QCoreApplication::notifyInternal2(QObject*, QEvent*) () from /usr/lib/libQt5Core.so.5
+#15 0x00007ffff7003474 in QGuiApplicationPrivate::processKeyEvent(QWindowSystemInterfacePrivate::KeyEvent*) ()
+   from /usr/lib/libQt5Gui.so.5
+#16 0x00007ffff6fdcbb5 in QWindowSystemInterface::sendWindowSystemEvents(QFlags<QEventLoop::ProcessEventsFlag>) ()
+   from /usr/lib/libQt5Gui.so.5
+#17 0x00007ffff2d4c16c in ?? () from /usr/lib/libQt5XcbQpa.so.5
+#18 0x00007ffff5a5eb84 in g_main_context_dispatch () from /usr/lib/libglib-2.0.so.0
+#19 0x00007ffff5ab2c21 in ?? () from /usr/lib/libglib-2.0.so.0
+#20 0x00007ffff5a5d3b1 in g_main_context_iteration () from /usr/lib/libglib-2.0.so.0
+#21 0x00007ffff6c86691 in QEventDispatcherGlib::processEvents(QFlags<QEventLoop::ProcessEventsFlag>) () from /usr/lib/libQt5Core.so.5
+#22 0x00007ffff6c2c3ac in QEventLoop::exec(QFlags<QEventLoop::ProcessEventsFlag>) () from /usr/lib/libQt5Core.so.5
+#23 0x00007ffff6c34844 in QCoreApplication::exec() () from /usr/lib/libQt5Core.so.5
+#24 0x0000555555561183 in main (argc=<optimized out>, argv=0x7fffffffe298) at src/main.cpp:298
+(gdb) q
+A debugging session is active.
+
+	Inferior 1 [process 1029164] will be killed.
+
+Quit anyway? (y or n) y

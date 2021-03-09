@@ -74,14 +74,15 @@ void ClientNetwork::readUntil() {
     });
 }
 
-void init(ClientNetwork *net) {
+void init(ClientNetwork *net, std::string uuid) {
     std::ifstream ifs("preferences.json");
     std::string content((std::istreambuf_iterator<char>(ifs)),
                         (std::istreambuf_iterator<char>()));
     json value = json::parse(content);
     std::string uname = value["username"].get<std::string>();
-    //net->sendRequest("/nick " + uname);
-    net->sendRequest("/history 0 100");
+    net->sendRequest("/login " + uuid);
+    net->sendRequest("/get_all_metadata");
+    //net->sendRequest("/history 0 100");
 }
 
 class Message : public QWidget {
@@ -188,18 +189,16 @@ struct Metadata {
 class MainWindow;
 class Client {
 private:
-    Metadata meta;
-    std::unordered_map<uint32_t, Metadata> peers; //TODO per-server in future
+    uint64_t uuid = 0;
+    std::unordered_map<uint64_t, Metadata> peers; //TODO per-server in future
 public:
-    Client() {
-        meta.pfp = new QPixmap("test.png");
-    }
     void handleNetwork(QString data, MainWindow *parent);
     QString getName() {
-        return QString::fromStdString(meta.uname);
+        return QString::fromStdString(peers[uuid].uname);
     }
     QPixmap *getPfp() {
-        return meta.pfp;
+        std::cout << uuid << "\n";
+        return peers[uuid].pfp;
     }
 };
 
@@ -211,7 +210,7 @@ class MainWindow : public QWidget {
     
 public:
     Client client;
-    MainWindow(ClientNetwork* network) {
+    MainWindow(ClientNetwork* network, std::string uuid) {
         net = network;
 
         std::ifstream ifs("stylesheet.qss");
@@ -220,7 +219,6 @@ public:
         
         setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
         
-        init(network);
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
         cont = new MessageContainer();
@@ -232,6 +230,7 @@ public:
         connect(network, &ClientNetwork::msgRecvd, this, &MainWindow::handleNetwork);
         setLayout(layout);
         show();
+        init(network, uuid);
     }
 
     void addMessage(Message *msg) {
@@ -261,15 +260,14 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
             parent->insertMessage(pos++, new Message(
-                QString::fromStdString(std::to_string(elem["user"].get<uint64_t>())), //TODO make other one like this
+                QString::fromStdString(peers[elem["user"].get<uint64_t>()].uname), //TODO make other one like this
                 QString::fromStdString(elem["content"].get<std::string>()),
-                peers[msg["user"].get<uint64_t>()].pfp));
+                peers[elem["user"].get<uint64_t>()].pfp));
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
             if (msg["key"].get<std::string>() == "self_uuid") {
-                meta.uuid = msg["value"].get<uint64_t>();
-                std::cout << meta.uuid << "\n";
+                uuid = msg["value"].get<uint64_t>();
             }
         } else if (msg["command"].get<std::string>() == "metadata") {
             peers.clear();
@@ -293,7 +291,8 @@ int main(int argc, char *argv[]) {
     network.connect("127.0.0.1", 2345);
     
     QApplication app(argc, argv);
-    MainWindow window(&network);
+    std::string uuid = std::string(argv[1]);
+    MainWindow window(&network, uuid);
 
     return app.exec();
 }
