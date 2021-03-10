@@ -133,7 +133,6 @@ public:
     void addMessage(Message* msg) {
         messages.push_back(msg);
         layout->addWidget(msg);
-   //     ensureWidgetVisible(msg);
     }
 
     void insertMessage(uint32_t idx, Message* msg) {
@@ -184,13 +183,23 @@ struct Metadata {
                 pixMap
                 };
     }
+
+    void update(json value) {
+        uuid    = value["uuid"].get<uint64_t>();
+        uname   = value["name"].get<std::string>();
+        pfp_b64 = value["pfp"].get<std::string>();
+        
+        std::vector<uint8_t> buf = base64_decode(pfp_b64);
+        QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
+        pfp->loadFromData(data, "PNG");
+    }
 };
 
 class MainWindow;
 class Client {
 private:
     uint64_t uuid = 0;
-    std::unordered_map<uint64_t, Metadata> peers; //TODO per-server in future
+    std::unordered_map<uint64_t, Metadata> peers = {}; //TODO per-server in future
 public:
     void handleNetwork(QString data, MainWindow *parent);
     QString getName() {
@@ -270,9 +279,13 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
                 uuid = msg["value"].get<uint64_t>();
             }
         } else if (msg["command"].get<std::string>() == "metadata") {
-            peers.clear();
             for (auto &elem : msg["data"]) {
-                peers[elem["uuid"].get<uint64_t>()] = Metadata::from_json(elem);
+                uint64_t elem_uuid = elem["uuid"].get<uint64_t>();
+                if (peers.count(elem_uuid) == 0) {
+                    peers[elem_uuid] = Metadata::from_json(elem);
+                } else {
+                    peers[elem_uuid].update(elem);
+                }
             }
         }
     } else if (!msg["content"].is_null()) {

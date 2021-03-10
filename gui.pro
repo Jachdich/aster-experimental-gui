@@ -21,3 +21,5 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # Input
 HEADERS += include/network.h
 SOURCES += src/main.cpp src/base64.cpp
+
+QMAKE_CXXFLAGS += -g
