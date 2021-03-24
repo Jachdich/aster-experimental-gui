@@ -80,8 +80,9 @@ void init(ClientNetwork *net, std::string uuid) {
                         (std::istreambuf_iterator<char>()));
     json value = json::parse(content);
     std::string uname = value["username"].get<std::string>();
-    net->sendRequest("/login " + uuid);
-    net->sendRequest("/get_all_metadata");
+    net->sendRequest("/register");
+    //net->sendRequest("/login " + uuid);
+    //net->sendRequest("/get_all_metadata");
     //net->sendRequest("/history 0 100");
 }
 
@@ -277,6 +278,7 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
         if (msg["command"].get<std::string>() == "set") {
             if (msg["key"].get<std::string>() == "self_uuid") {
                 uuid = msg["value"].get<uint64_t>();
+                std::cout << "Set uuid to " << uuid << "\n";
             }
         } else if (msg["command"].get<std::string>() == "metadata") {
             for (auto &elem : msg["data"]) {
@@ -304,8 +306,8 @@ int main(int argc, char *argv[]) {
     network.connect("127.0.0.1", 2345);
     
     QApplication app(argc, argv);
-    std::string uuid = std::string(argv[1]);
-    MainWindow window(&network, uuid);
+    //std::string uuid = std::string(argv[1]);
+    MainWindow window(&network, ""/*uuid*/);
 
     return app.exec();
 }

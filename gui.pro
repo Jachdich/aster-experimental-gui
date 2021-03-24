@@ -23,3 +23,4 @@ HEADERS += include/network.h
 SOURCES += src/main.cpp src/base64.cpp
 
 QMAKE_CXXFLAGS += -g
+QMAKE_CXXFLAGS -= -O2
