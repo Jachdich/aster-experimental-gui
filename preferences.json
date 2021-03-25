@@ -1,1 +1,3 @@
-{"username": "KingJellyfish"}
+{"servers": [
+    {"name": "cospox", "ip": "127.0.0.1", "port": 2345, "pfp": "", "uuid": 104134124134134134134},
+]}

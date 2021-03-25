@@ -75,11 +75,7 @@ void ClientNetwork::readUntil() {
 }
 
 void init(ClientNetwork *net, std::string uuid) {
-    std::ifstream ifs("preferences.json");
-    std::string content((std::istreambuf_iterator<char>(ifs)),
-                        (std::istreambuf_iterator<char>()));
-    json value = json::parse(content);
-    std::string uname = value["username"].get<std::string>();
+
     net->sendRequest("/register");
     //net->sendRequest("/login " + uuid);
     //net->sendRequest("/get_all_metadata");
@@ -212,16 +208,35 @@ public:
     }
 };
 
+class ServerButton : public QPushButton {
+    std::string name;
+    std::string ip;
+    uint64_t uuid;
+    uint16_t port;
+    QPixMap pfp;        std::string uname = value["username"].get<std::string>();
+
+public:
+    ServerButton(
+
 class MainWindow : public QWidget {
     MessageContainer *cont;
     QLineEdit *input;
     QVBoxLayout *layout;
     ClientNetwork* net;
-    
+    std::vec<QPushButton*> serverButtons;
 public:
     Client client;
     MainWindow(ClientNetwork* network, std::string uuid) {
         net = network;
+
+        std::ifstream ifs("preferences.json");
+        std::string content((std::istreambuf_iterator<char>(ifs)),
+                            (std::istreambuf_iterator<char>()));
+        json value = json::parse(content);
+
+        for (auto &elem: value["servers"]) {
+            elem[
+        }
 
         std::ifstream ifs("stylesheet.qss");
         std::string ss((std::istreambuf_iterator<char>(ifs)),
