@@ -79,14 +79,6 @@ void ClientNetwork::readUntil() {
     });
 }
 
-void init(ClientNetwork *net, std::string uuid) {
-
-    net->sendRequest("/register");
-    //net->sendRequest("/login " + uuid);
-    //net->sendRequest("/get_all_metadata");
-    //net->sendRequest("/history 0 100");
-}
-
 class Message : public QWidget {
     QLabel *content;
     QLabel *pfp;
@@ -197,12 +189,23 @@ struct Metadata {
     }
 };
 
-class MainWindow;
-class Client {
-private:
-    uint64_t uuid = 0;
-    std::unordered_map<uint64_t, Metadata> peers = {}; //TODO per-server in future
-public:
+struct ServerModel {
+    std::string name;
+    std::string ip;
+    uint64_t uuid;
+    uint16_t port;
+    QPixmap pfp;
+    std::unordered_map<uint64_t, Metadata> peers = {};
+    ClientNetwork* net;
+    ServerModel(std::string name, std::string ip, uint64_t uuid, uint16_t port, std::string pfp_b64) {
+        this->name = name;
+        this->ip = ip;
+        this->uuid = uuid;
+        this->port = port;
+        std::vector<uint8_t> buf = base64_decode(pfp_b64);
+        QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
+        pfp.loadFromData(data, "PNG");
+    }
     void handleNetwork(QString data, MainWindow *parent);
     QString getName() {
         return QString::fromStdString(peers[uuid].uname);
@@ -211,20 +214,18 @@ public:
         std::cout << uuid << "\n";
         return peers[uuid].pfp;
     }
+
+    void sendRequest(std::string data) {
+        this->net->sendRequest(data);
+    }
 };
 
-ServerButton::ServerButton(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64, MainWindow* parent) {
+ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     //setText(QString::fromStdString(name));
-    this->name = name;
-    this->ip = ip;
-    this->uuid = uuid,
-    this->port = port;
+    this->server = server;
     this->parent = parent;
-    std::vector<uint8_t> buf = base64_decode(pfp_b64);
-    QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
-    pfp.loadFromData(data, "PNG");
-    setIcon(pfp);
-    setIconSize(pfp.rect().size());
+    setIcon(server->pfp);
+    setIconSize(server->pfp.rect().size());
     setCheckable(true);
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
 }
@@ -235,9 +236,9 @@ class MainWindow : public QWidget {
     QVBoxLayout *layout;
     QHBoxLayout *serverLayout;
     std::vector<ServerButton*> serverButtons;
+    std::vector<ServerModel*> servers;
     size_t selectedServer;
 public:
-    Client client;
     MainWindow() {
 
         std::ifstream ifs_preferences("preferences.json");
@@ -248,14 +249,15 @@ public:
         serverLayout = new QHBoxLayout();
 
         for (auto &elem: value["servers"]) {
-            ServerButton *button = new ServerButton(
+            servers.push_back(new ServerModel(
                 elem["name"].get<std::string>(),
                 elem["ip"].get<std::string>(),
                 elem["port"].get<uint16_t>(),
                 elem["uuid"].get<uint64_t>(),
-                elem["pfp"].get<std::string>(),
-                this
+                elem["pfp"].get<std::string>())
             );
+                
+            ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
             serverLayout->addWidget(button);
             serverButtons.push_back(button);
         }
@@ -272,11 +274,10 @@ public:
         layout->addWidget(cont);
         layout->addWidget(input);
         connect(input, &QLineEdit::returnPressed, this, &MainWindow::handleButton);
-        connect(network, &ClientNetwork::msgRecvd, this, &MainWindow::handleNetwork);
+        //
         setLayout(layout);
         input->setFocus();
         show();
-        init(network, uuid);
 
     }
 
@@ -289,8 +290,7 @@ public:
     }
 
     void handleServerClick(ServerButton* button) {
-        std::cout << button->name << "\n";
-        for (size_t i = 0; i < serverButtons.length(); i++) {
+        for (size_t i = 0; i < serverButtons.size(); i++) {
             ServerButton* b = serverButtons[i];
             if (b != button) {
                 b->blockSignals(true);
@@ -305,13 +305,13 @@ public:
 
 public slots:
     void handleButton() {
-        net->sendRequest(input->text().toUtf8().constData());
-        cont->addMessage(new Message(client.getName(), input->text(), client.getPfp()));
+        servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
+        cont->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
         input->setText("");
     }
 
     void handleNetwork(QString data) {
-        client.handleNetwork(data, this);
+        servers[selectedServer]->handleNetwork(data, this);
     }
 };
 
@@ -326,7 +326,7 @@ void ServerButton::handleClick(bool n) {
     //TODO make this a signal/slot?
 }
 
-void Client::handleNetwork(QString data, MainWindow *parent) {
+void ServerModel::handleNetwork(QString data, MainWindow *parent) {
     json msg = json::parse(data.toUtf8().constData());
     std::cout << data.toUtf8().constData() << "\n";
     if (!msg["history"].is_null()) {

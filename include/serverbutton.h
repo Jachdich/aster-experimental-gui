@@ -6,19 +6,15 @@
 #include <QPaintEvent>
 #include <string>
 
+class ServerModel;
 class MainWindow;
 class ServerButton : public QPushButton {
 Q_OBJECT
 public:
-    std::string name;
-    std::string ip;
-    uint64_t uuid;
-    uint16_t port;
-    QPixmap pfp;
-    MainWindow *parent;
+    ServerModel* server;
+    MainWindow* parent;
 public:
-    ServerButton(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64, MainWindow* parent);
-//    void paintEvent(QPaintEvent *);
+    ServerButton(ServerModel* server, MainWindow* parent);
 
 public slots:
     void handleClick(bool);
