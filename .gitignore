@@ -1,0 +1,6 @@
+Makefile
+*.o
+moc_*
+process.txt
+log.txt
+
