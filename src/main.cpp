@@ -11,12 +11,17 @@
 #include <QPixmap>
 #include <QScrollBar>
 #include <QByteArray>
-#include <vector>
+#include <QPushButton>
+#include <QStyleOption>
+#include <QStyle>
+#include <QPainter>
 
+#include <vector>
 #include <iostream>
 #include <fstream>
 
 #include "network.h"
+#include "serverbutton.h"
 #include "base64.h"
 
 using asio::ip::tcp;
@@ -208,54 +213,71 @@ public:
     }
 };
 
-class ServerButton : public QPushButton {
-    std::string name;
-    std::string ip;
-    uint64_t uuid;
-    uint16_t port;
-    QPixMap pfp;        std::string uname = value["username"].get<std::string>();
-
-public:
-    ServerButton(
+ServerButton::ServerButton(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64, MainWindow* parent) {
+    //setText(QString::fromStdString(name));
+    this->name = name;
+    this->ip = ip;
+    this->uuid = uuid,
+    this->port = port;
+    this->parent = parent;
+    std::vector<uint8_t> buf = base64_decode(pfp_b64);
+    QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
+    pfp.loadFromData(data, "PNG");
+    setIcon(pfp);
+    setIconSize(pfp.rect().size());
+    setCheckable(true);
+    connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
+}
 
 class MainWindow : public QWidget {
     MessageContainer *cont;
     QLineEdit *input;
     QVBoxLayout *layout;
-    ClientNetwork* net;
-    std::vec<QPushButton*> serverButtons;
+    QHBoxLayout *serverLayout;
+    std::vector<ServerButton*> serverButtons;
+    size_t selectedServer;
 public:
     Client client;
-    MainWindow(ClientNetwork* network, std::string uuid) {
-        net = network;
+    MainWindow() {
 
-        std::ifstream ifs("preferences.json");
-        std::string content((std::istreambuf_iterator<char>(ifs)),
+        std::ifstream ifs_preferences("preferences.json");
+        std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
                             (std::istreambuf_iterator<char>()));
         json value = json::parse(content);
 
+        serverLayout = new QHBoxLayout();
+
         for (auto &elem: value["servers"]) {
-            elem[
+            ServerButton *button = new ServerButton(
+                elem["name"].get<std::string>(),
+                elem["ip"].get<std::string>(),
+                elem["port"].get<uint16_t>(),
+                elem["uuid"].get<uint64_t>(),
+                elem["pfp"].get<std::string>(),
+                this
+            );
+            serverLayout->addWidget(button);
+            serverButtons.push_back(button);
         }
 
-        std::ifstream ifs("stylesheet.qss");
-        std::string ss((std::istreambuf_iterator<char>(ifs)),
-                       (std::istreambuf_iterator<char>()));
-        
-        setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
-        
+        serverLayout->addStretch(1);
+        serverLayout->setSpacing(0);
+
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
         cont = new MessageContainer();
         
         input = new QLineEdit();
+        layout->addLayout(serverLayout);
         layout->addWidget(cont);
         layout->addWidget(input);
         connect(input, &QLineEdit::returnPressed, this, &MainWindow::handleButton);
         connect(network, &ClientNetwork::msgRecvd, this, &MainWindow::handleNetwork);
         setLayout(layout);
+        input->setFocus();
         show();
         init(network, uuid);
+
     }
 
     void addMessage(Message *msg) {
@@ -264,6 +286,21 @@ public:
 
     void insertMessage(uint32_t pos, Message *msg) {
         cont->insertMessage(pos, msg);
+    }
+
+    void handleServerClick(ServerButton* button) {
+        std::cout << button->name << "\n";
+        for (size_t i = 0; i < serverButtons.length(); i++) {
+            ServerButton* b = serverButtons[i];
+            if (b != button) {
+                b->blockSignals(true);
+                b->setChecked(false);
+                b->blockSignals(false);
+            } else {
+                //sneaky trick to find the index in the same loop
+                selectedServer = i;
+            }
+        }
     }
 
 public slots:
@@ -277,6 +314,17 @@ public slots:
         client.handleNetwork(data, this);
     }
 };
+
+void ServerButton::handleClick(bool n) {
+    if (n) {
+        parent->handleServerClick(this);
+    } else {
+        blockSignals(true);
+        setChecked(true);
+        blockSignals(false);
+    }
+    //TODO make this a signal/slot?
+}
 
 void Client::handleNetwork(QString data, MainWindow *parent) {
     json msg = json::parse(data.toUtf8().constData());
@@ -317,16 +365,14 @@ void Client::handleNetwork(QString data, MainWindow *parent) {
 }
 
 int main(int argc, char *argv[]) {
-    ClientNetwork network;
-    network.connect("127.0.0.1", 2345);
     
     QApplication app(argc, argv);
-    //std::string uuid = std::string(argv[1]);
-    MainWindow window(&network, ""/*uuid*/);
+    std::ifstream ifs("stylesheet.qss");
+    std::string ss((std::istreambuf_iterator<char>(ifs)),
+                   (std::istreambuf_iterator<char>()));
+    
+    app.setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
+    MainWindow window();
 
     return app.exec();
 }
-
-
-//One 3193709851413311828
-//two 1851050229929352744

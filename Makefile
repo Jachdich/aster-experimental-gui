@@ -53,10 +53,12 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = src/main.cpp \
-		src/base64.cpp moc_network.cpp
+		src/base64.cpp moc_network.cpp \
+		moc_serverbutton.cpp
 OBJECTS       = main.o \
 		base64.o \
-		moc_network.o
+		moc_network.o \
+		moc_serverbutton.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/linux.conf \
@@ -183,7 +185,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exceptions.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
-		gui.pro include/network.h src/main.cpp \
+		gui.pro include/network.h \
+		include/serverbutton.h src/main.cpp \
 		src/base64.cpp
 QMAKE_TARGET  = gui
 DESTDIR       = 
@@ -466,7 +469,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents include/network.h $(DISTDIR)/
+	$(COPY_FILE) --parents include/network.h include/serverbutton.h $(DISTDIR)/
 	$(COPY_FILE) --parents src/main.cpp src/base64.cpp $(DISTDIR)/
 
 
@@ -499,14 +502,19 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -g -O2 -Wall -W -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_network.cpp
+compiler_moc_header_make_all: moc_network.cpp moc_serverbutton.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_network.cpp
+	-$(DEL_FILE) moc_network.cpp moc_serverbutton.cpp
 moc_network.cpp: include/network.h \
 		include/nlohmann/json.hpp \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/james/Build/aster/gui/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/james/Build/aster/gui -I/home/james/Build/aster/gui/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/network.h -o moc_network.cpp
+
+moc_serverbutton.cpp: include/serverbutton.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/james/Build/aster/gui/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/james/Build/aster/gui -I/home/james/Build/aster/gui/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/serverbutton.h -o moc_serverbutton.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -526,6 +534,7 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean
 
 main.o: src/main.cpp include/network.h \
 		include/nlohmann/json.hpp \
+		include/serverbutton.h \
 		include/base64.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o src/main.cpp
 
@@ -534,6 +543,9 @@ base64.o: src/base64.cpp include/base64.h
 
 moc_network.o: moc_network.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_network.o moc_network.cpp
+
+moc_serverbutton.o: moc_serverbutton.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_serverbutton.o moc_serverbutton.cpp
 
 ####### Install
 
