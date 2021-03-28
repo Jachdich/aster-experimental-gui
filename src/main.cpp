@@ -15,6 +15,7 @@
 #include <QStyleOption>
 #include <QStyle>
 #include <QPainter>
+#include <QStackedLayout>
 
 #include <vector>
 #include <iostream>
@@ -206,7 +207,9 @@ struct ServerModel {
         QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
         pfp.loadFromData(data, "PNG");
     }
+    
     void handleNetwork(QString data, MainWindow *parent);
+    
     QString getName() {
         return QString::fromStdString(peers[uuid].uname);
     }
@@ -230,23 +233,51 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
 }
 
+class NewServerView : public QWidget {
+    QLineEdit* ip;
+    QLineEdit* port;
+    QPushButton* back;
+    QPushButton* connect;
+    QGridLayout* layout;
+public:
+    NewServerView() {
+        layout = new QGridLayout();
+        ip = new QLineEdit();
+        port = new QLineEdit();
+        back = new QPushButton("Back");
+        connect = new QPushButton("Connect");
+        port->setInputMask("99999;");
+        port->setText("2345");
+        layout->addWidget(ip, 0, 0);
+        layout->addWidget(port, 0, 1);
+        layout->addWidget(connect, 1, 0);
+        layout->addWidget(back, 1, 1);
+        setLayout(layout);
+    }
+};
+
 class MainWindow : public QWidget {
-    MessageContainer *cont;
-    QLineEdit *input;
-    QVBoxLayout *layout;
-    QHBoxLayout *serverLayout;
+    MessageContainer* cont;
+    NewServerView* nsv;
+    QLineEdit* input;
+    QVBoxLayout* layout;
+    QHBoxLayout* serverLayout;
+    QPushButton* addServerButton;
+    QStackedLayout* stackedLayout;
     std::vector<ServerButton*> serverButtons;
     std::vector<ServerModel*> servers;
     size_t selectedServer;
+
+    bool addNewServerSelected = false;
 public:
     MainWindow() {
-
         std::ifstream ifs_preferences("preferences.json");
         std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
                             (std::istreambuf_iterator<char>()));
         json value = json::parse(content);
 
         serverLayout = new QHBoxLayout();
+        stackedLayout = new QStackedLayout();
 
         for (auto &elem: value["servers"]) {
             servers.push_back(new ServerModel(
@@ -265,20 +296,27 @@ public:
         serverLayout->addStretch(1);
         serverLayout->setSpacing(0);
 
+        addServerButton = new QPushButton("+", this);
+        serverLayout->addWidget(addServerButton);
+
         setWindowTitle("Aster experimental GUI client");
         layout = new QVBoxLayout();
+        stackedLayout = new QStackedLayout();
+                
         cont = new MessageContainer();
+        nsv  = new NewServerView();
+        stackedLayout->addWidget(cont);
+        stackedLayout->addWidget(nsv);
         
         input = new QLineEdit();
         layout->addLayout(serverLayout);
-        layout->addWidget(cont);
+        layout->addLayout(stackedLayout);
         layout->addWidget(input);
         connect(input, &QLineEdit::returnPressed, this, &MainWindow::handleButton);
-        //
+        connect(addServerButton, &QPushButton::clicked, this, &MainWindow::addServer);
         setLayout(layout);
         input->setFocus();
         show();
-
     }
 
     void addMessage(Message *msg) {
@@ -310,8 +348,9 @@ public slots:
         input->setText("");
     }
 
-    void handleNetwork(QString data) {
-        servers[selectedServer]->handleNetwork(data, this);
+    void addServer() {
+        addNewServerSelected = !addNewServerSelected;
+        stackedLayout->setCurrentIndex(addNewServerSelected);
     }
 };
 
@@ -372,7 +411,7 @@ int main(int argc, char *argv[]) {
                    (std::istreambuf_iterator<char>()));
     
     app.setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
-    MainWindow window();
+    MainWindow window;
 
     return app.exec();
 }
