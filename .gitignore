@@ -4,3 +4,4 @@ moc_*
 process.txt
 log.txt
 gui
+.qmake.stash
