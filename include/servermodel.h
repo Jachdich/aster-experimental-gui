@@ -2,6 +2,7 @@
 #define __SERVERMODEL_H
 #include <QPixmap>
 #include <QString>
+#include <QWidget>
 
 #include <unordered_map>
 #include <string>
@@ -10,8 +11,13 @@
 
 class ClientNetwork;
 class MainWindow;
+class QVBoxLayout;
+class MessageContainer;
+class Message;
 
-struct ServerModel {
+struct ServerModel : public QWidget {
+    QVBoxLayout* layout;
+    MessageContainer* messages;
     std::string name;
     std::string ip;
     uint64_t uuid;
@@ -20,11 +26,14 @@ struct ServerModel {
     std::unordered_map<uint64_t, Metadata> peers = {};
     ClientNetwork* net;
     
-    ServerModel(std::string name, std::string ip, uint64_t uuid, uint16_t port, std::string pfp_b64);
-    void handleNetwork(QString data, MainWindow *parent);
+    ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
+    void handleNetwork(QString data);
     QString getName();
     QPixmap *getPfp();
     void sendRequest(std::string data);
+    void addMessage(Message* msg);
+
+    void initialise();
 };
 
 #endif

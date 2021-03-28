@@ -7,7 +7,6 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-// for convenience
 using json = nlohmann::json;
 
 class ClientNetwork : public QObject {

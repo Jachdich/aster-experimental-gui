@@ -18,6 +18,7 @@ void ClientNetwork::handleNetworkPacket(std::string data) {
 }
 
 void ClientNetwork::connect(std::string address, uint16_t port) {
+    std::cout << address << ":" << port << "\n";
     asio::error_code ec;
 
     asio::ip::tcp::resolver resolver(ctx);

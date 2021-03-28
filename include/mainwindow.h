@@ -16,20 +16,17 @@ class ServerModel;
 class Message;
 
 class MainWindow : public QWidget {
-    MessageContainer* cont;
     NewServerView* nsv;
     QLineEdit* input;
     QVBoxLayout* layout;
-    QHBoxLayout* serverLayout;
+    QHBoxLayout* serverButtonLayout;
     QPushButton* addServerButton;
-    QStackedLayout* stackedLayout;
+    QStackedLayout* serverContentLayout;
     std::vector<ServerButton*> serverButtons;
     std::vector<ServerModel*> servers;
     size_t selectedServer;
 
-    bool addNewServerSelected = false;
 public:
-
     MainWindow();
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);
@@ -37,6 +34,8 @@ public:
 
 public slots:
     void handleButton();
-    void addServer();
+    void openNewServerView();
+    void closeNewServerView();
+    void addNewServer(QString ip, uint16_t port);
 };
 #endif

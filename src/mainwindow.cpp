@@ -7,7 +7,6 @@
 
 #include <fstream>
 
-//#include <QWidget>
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -20,55 +19,48 @@ MainWindow::MainWindow() {
                         (std::istreambuf_iterator<char>()));
     json value = json::parse(content);
 
-    serverLayout = new QHBoxLayout();
-    stackedLayout = new QStackedLayout();
+    serverButtonLayout = new QHBoxLayout();
+    serverContentLayout = new QStackedLayout();
 
     for (auto &elem: value["servers"]) {
-        servers.push_back(new ServerModel(
+        ServerModel* server = new ServerModel(
             elem["name"].get<std::string>(),
             elem["ip"].get<std::string>(),
             elem["port"].get<uint16_t>(),
             elem["uuid"].get<uint64_t>(),
-            elem["pfp"].get<std::string>())
+            elem["pfp"].get<std::string>()
         );
+        servers.push_back(server);
             
         ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
-        serverLayout->addWidget(button);
+        serverButtonLayout->addWidget(button);
+        serverContentLayout->addWidget(server);
         serverButtons.push_back(button);
     }
 
-    serverLayout->addStretch(1);
-    serverLayout->setSpacing(0);
+    serverButtonLayout->addStretch(1);
+    serverButtonLayout->setSpacing(0);
 
     addServerButton = new QPushButton("+", this);
-    serverLayout->addWidget(addServerButton);
+    serverButtonLayout->addWidget(addServerButton);
 
     setWindowTitle("Aster experimental GUI client");
     layout = new QVBoxLayout();
-    stackedLayout = new QStackedLayout();
             
-    cont = new MessageContainer();
-    nsv  = new NewServerView();
-    stackedLayout->addWidget(cont);
-    stackedLayout->addWidget(nsv);
+    nsv = new NewServerView();
+    serverContentLayout->addWidget(nsv);
     
     input = new QLineEdit();
-    layout->addLayout(serverLayout);
-    layout->addLayout(stackedLayout);
+    layout->addLayout(serverButtonLayout);
+    layout->addLayout(serverContentLayout);
     layout->addWidget(input);
     connect(input, &QLineEdit::returnPressed, this, &MainWindow::handleButton);
-    connect(addServerButton, &QPushButton::clicked, this, &MainWindow::addServer);
+    connect(addServerButton, &QPushButton::clicked, this, &MainWindow::openNewServerView);
+    connect(nsv, &NewServerView::backPressed, this, &MainWindow::closeNewServerView);
+    connect(nsv, &NewServerView::connectPressed, this, &MainWindow::addNewServer);
     setLayout(layout);
     input->setFocus();
     show();
-}
-
-void MainWindow::addMessage(Message *msg) {
-    cont->addMessage(msg);
-}
-
-void MainWindow::insertMessage(uint32_t pos, Message *msg) {
-    cont->insertMessage(pos, msg);
 }
 
 void MainWindow::handleServerClick(ServerButton* button) {
@@ -87,11 +79,34 @@ void MainWindow::handleServerClick(ServerButton* button) {
 
 void MainWindow::handleButton() {
     servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
-    cont->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
+    servers[selectedServer]->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
     input->setText("");
 }
 
-void MainWindow::addServer() {
-    addNewServerSelected = !addNewServerSelected;
-    stackedLayout->setCurrentIndex(addNewServerSelected);
+void MainWindow::addNewServer(QString ip, uint16_t port) {
+    ServerModel* server = new ServerModel(
+        "",
+        ip.toUtf8().constData(),
+        port,
+        -1, 
+        ""
+    );
+    server->initialise();
+
+    //while (!server->initialised); //TODO VERY BAD IDEA!
+
+    servers.push_back(server);
+    
+    ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
+    serverButtonLayout->insertWidget(-2, button);
+    serverContentLayout->insertWidget(-1, server);
+    serverButtons.push_back(button);
+}
+
+void MainWindow::openNewServerView() {
+    serverContentLayout->setCurrentIndex(-1);
+}
+
+void MainWindow::closeNewServerView() {
+    serverContentLayout->setCurrentIndex(selectedServer);
 }
