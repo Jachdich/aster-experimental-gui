@@ -63,6 +63,22 @@ MainWindow::MainWindow() {
     show();
 }
 
+void MainWindow::save() {
+    json result = json::object();
+    result["servers"] = json::array();
+    for (ServerModel* server : servers) {
+        json obj = json::object();
+        obj["name"] = server->name;
+        obj["ip"] = server->ip;
+        obj["port"] = server->port;
+        obj["uuid"] = server->uuid;
+        obj["pfp"] = server->pfp_b64;
+        result["servers"].push_back(obj);
+    }
+    std::ofstream os("preferences.json");
+    os << result.dump();
+}
+
 void MainWindow::handleServerClick(ServerButton* button) {
     for (size_t i = 0; i < serverButtons.size(); i++) {
         ServerButton* b = serverButtons[i];
@@ -73,6 +89,7 @@ void MainWindow::handleServerClick(ServerButton* button) {
         } else {
             //sneaky trick to find the index in the same loop
             selectedServer = i;
+            serverContentLayout->setCurrentIndex(selectedServer);
         }
     }
 }
@@ -91,20 +108,21 @@ void MainWindow::addNewServer(QString ip, uint16_t port) {
         -1, 
         ""
     );
+    connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
     server->initialise();
+}
 
-    //while (!server->initialised); //TODO VERY BAD IDEA!
-
+void MainWindow::onServerInitialised(ServerModel* server) {
     servers.push_back(server);
     
     ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
-    serverButtonLayout->insertWidget(-2, button);
-    serverContentLayout->insertWidget(-1, server);
+    serverButtonLayout->insertWidget(servers.size() - 1, button);
+    serverContentLayout->insertWidget(servers.size() - 1, server);
     serverButtons.push_back(button);
 }
 
 void MainWindow::openNewServerView() {
-    serverContentLayout->setCurrentIndex(-1);
+    serverContentLayout->setCurrentIndex(servers.size());
 }
 
 void MainWindow::closeNewServerView() {

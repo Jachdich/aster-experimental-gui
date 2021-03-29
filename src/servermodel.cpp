@@ -16,9 +16,12 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
     this->ip = ip;
     this->uuid = uuid;
     this->port = port;
+    this->pfp_b64 = pfp_b64;
     std::vector<uint8_t> buf = base64_decode(pfp_b64);
     QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
     pfp.loadFromData(data, "PNG");
+    QPixmap temp = pfp.scaled(32, 32);
+    pfp = temp;
     net = new ClientNetwork();
     layout = new QVBoxLayout();
     messages = new MessageContainer();
@@ -81,8 +84,13 @@ void ServerModel::handleNetwork(QString data) {
             std::vector<uint8_t> buf = base64_decode(msg["data"].get<std::string>());
             QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
             pfp.loadFromData(data, "PNG");
+            QPixmap temp = pfp.scaled(32, 32);
+            pfp = temp;
+            pfp_b64 = msg["data"].get<std::string>();
         } else if (msg["command"].get<std::string>() == "get_name") {
             name = msg["data"].get<std::string>();
+            emit initialised(this);
+            //TODO not guarenteed t0 be initialised
         }
     } else if (!msg["content"].is_null()) {
         messages->addMessage(new Message(

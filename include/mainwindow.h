@@ -31,11 +31,13 @@ public:
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);
     void handleServerClick(ServerButton* button);
+    void save();
 
 public slots:
     void handleButton();
     void openNewServerView();
     void closeNewServerView();
     void addNewServer(QString ip, uint16_t port);
+    void onServerInitialised(ServerModel* server);
 };
 #endif

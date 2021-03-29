@@ -35,5 +35,7 @@ int main(int argc, char *argv[]) {
     app.setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
     MainWindow window;
 
-    return app.exec();
+    int32_t ret = app.exec();
+    window.save();
+    return ret;
 }

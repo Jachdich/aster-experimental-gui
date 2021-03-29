@@ -15,7 +15,9 @@ class QVBoxLayout;
 class MessageContainer;
 class Message;
 
-struct ServerModel : public QWidget {
+class ServerModel : public QWidget {
+Q_OBJECT
+public:
     QVBoxLayout* layout;
     MessageContainer* messages;
     std::string name;
@@ -23,6 +25,7 @@ struct ServerModel : public QWidget {
     uint64_t uuid;
     uint16_t port;
     QPixmap pfp;
+    std::string pfp_b64;
     std::unordered_map<uint64_t, Metadata> peers = {};
     ClientNetwork* net;
     
@@ -34,6 +37,9 @@ struct ServerModel : public QWidget {
     void addMessage(Message* msg);
 
     void initialise();
+
+signals:
+    void initialised(ServerModel*);
 };
 
 #endif
