@@ -37,6 +37,7 @@ public:
     void addMessage(Message* msg);
 
     void initialise();
+    void connect();
 
 signals:
     void initialised(ServerModel*);

@@ -31,6 +31,7 @@ MainWindow::MainWindow() {
             elem["pfp"].get<std::string>()
         );
         servers.push_back(server);
+        server->connect();
             
         ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
         serverButtonLayout->addWidget(button);
@@ -60,6 +61,9 @@ MainWindow::MainWindow() {
     connect(nsv, &NewServerView::connectPressed, this, &MainWindow::addNewServer);
     setLayout(layout);
     input->setFocus();
+    if (serverButtons.size() > 0) {
+        handleServerClick(serverButtons[0]);
+    }
     show();
 }
 

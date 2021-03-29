@@ -46,8 +46,16 @@ void ServerModel::initialise() {
     net->connect(ip, port);
     net->sendRequest("/register");
     net->sendRequest("/get_all_metadata");
+    net->sendRequest("/history 200");
     net->sendRequest("/get_icon");
     net->sendRequest("/get_name");
+}
+
+void ServerModel::connect() {
+    net->connect(ip, port);
+    net->sendRequest("/login " + std::to_string(uuid));
+    net->sendRequest("/get_all_metadata");
+    net->sendRequest("/history 200");
 }
 
 void ServerModel::addMessage(Message* msg) {
@@ -61,9 +69,9 @@ void ServerModel::handleNetwork(QString data) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
             messages->insertMessage(pos++, new Message(
-                QString::fromStdString(peers[elem["user"].get<uint64_t>()].uname), //TODO make other one like this
-                QString::fromStdString(elem["content"].get<std::string>()),
-                peers[elem["user"].get<uint64_t>()].pfp));
+                            QString::fromStdString(peers[elem["author_uuid"].get<uint64_t>()].uname),
+                            QString::fromStdString(elem["content"].get<std::string>()),
+                            peers[elem["author_uuid"].get<uint64_t>()].pfp));
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
@@ -94,9 +102,9 @@ void ServerModel::handleNetwork(QString data) {
         }
     } else if (!msg["content"].is_null()) {
         messages->addMessage(new Message(
-            QString::fromStdString(peers[msg["user"].get<uint64_t>()].uname),
+            QString::fromStdString(peers[msg["author_uuid"].get<uint64_t>()].uname),
             QString::fromStdString(msg["content"].get<std::string>()),
-            peers[msg["user"].get<uint64_t>()].pfp));
+            peers[msg["author_uuid"].get<uint64_t>()].pfp));
     } else {
         //???
         //ignore for now
