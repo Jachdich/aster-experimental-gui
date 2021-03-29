@@ -8,6 +8,7 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     this->server = server;
     this->parent = parent;
     setIcon(server->pfp);
+    setToolTip(QString::fromStdString(server->name));
     setIconSize(server->pfp.rect().size());
     setCheckable(true);
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
