@@ -20,7 +20,7 @@ signals:
     void msgRecvd(QString msg);
 
 public:
-    void connect(std::string address, uint16_t port);
+    bool connect(std::string address, uint16_t port);
     asio::streambuf buf;
     asio::io_context ctx;
     asio::ssl::context ssl_ctx;

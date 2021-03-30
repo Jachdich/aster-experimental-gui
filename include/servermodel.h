@@ -36,8 +36,8 @@ public:
     void sendRequest(std::string data);
     void addMessage(Message* msg);
 
-    void initialise();
-    void connect();
+    bool initialise(uint64_t uuid);
+    bool connect();
 
 signals:
     void initialised(ServerModel*);

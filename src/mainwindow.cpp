@@ -4,6 +4,7 @@
 #include "message.h"
 #include "servermodel.h"
 #include "serverbutton.h"
+#include "errorpopup.h"
 
 #include <fstream>
 
@@ -30,13 +31,15 @@ MainWindow::MainWindow() {
             elem["uuid"].get<uint64_t>(),
             elem["pfp"].get<std::string>()
         );
-        servers.push_back(server);
+        //servers.push_back(server);
+        connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
         server->connect();
-            
+
+        /*
         ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
         serverButtonLayout->addWidget(button);
         serverContentLayout->addWidget(server);
-        serverButtons.push_back(button);
+        serverButtons.push_back(button);*/
     }
 
     serverButtonLayout->addStretch(1);
@@ -49,7 +52,6 @@ MainWindow::MainWindow() {
     layout = new QVBoxLayout();
             
     nsv = new NewServerView();
-    serverContentLayout->addWidget(nsv);
     
     input = new QLineEdit();
     layout->addLayout(serverButtonLayout);
@@ -104,16 +106,21 @@ void MainWindow::handleButton() {
     input->setText("");
 }
 
-void MainWindow::addNewServer(QString ip, uint16_t port) {
+void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
     ServerModel* server = new ServerModel(
         "",
         ip.toUtf8().constData(),
         port,
-        -1, 
+        uuid, 
         ""
     );
     connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
-    server->initialise();
+    bool success = server->initialise(uuid);
+    if (!success) {
+        delete server;
+        ErrorPopup* popup = new ErrorPopup("Error: Connection refused");
+        connect(popup, &ErrorPopup::dismissed, [=]() { delete popup; });
+    }
 }
 
 void MainWindow::onServerInitialised(ServerModel* server) {
@@ -123,12 +130,13 @@ void MainWindow::onServerInitialised(ServerModel* server) {
     serverButtonLayout->insertWidget(servers.size() - 1, button);
     serverContentLayout->insertWidget(servers.size() - 1, server);
     serverButtons.push_back(button);
+    server->sendRequest("/history 200");
 }
 
 void MainWindow::openNewServerView() {
-    serverContentLayout->setCurrentIndex(servers.size());
+    nsv->show();
 }
 
 void MainWindow::closeNewServerView() {
-    serverContentLayout->setCurrentIndex(selectedServer);
+    nsv->hide();
 }

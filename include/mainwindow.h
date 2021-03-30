@@ -24,7 +24,7 @@ class MainWindow : public QWidget {
     QStackedLayout* serverContentLayout;
     std::vector<ServerButton*> serverButtons;
     std::vector<ServerModel*> servers;
-    size_t selectedServer;
+    size_t selectedServer = 0;
 
 public:
     MainWindow();
@@ -37,7 +37,7 @@ public slots:
     void handleButton();
     void openNewServerView();
     void closeNewServerView();
-    void addNewServer(QString ip, uint16_t port);
+    void addNewServer(QString ip, uint16_t port, uint64_t uuid);
     void onServerInitialised(ServerModel* server);
 };
 #endif

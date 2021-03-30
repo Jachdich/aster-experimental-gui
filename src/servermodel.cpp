@@ -42,20 +42,28 @@ void ServerModel::sendRequest(std::string data) {
     this->net->sendRequest(data);
 }
 
-void ServerModel::initialise() {
-    net->connect(ip, port);
-    net->sendRequest("/register");
-    net->sendRequest("/get_all_metadata");
-    net->sendRequest("/history 200");
-    net->sendRequest("/get_icon");
-    net->sendRequest("/get_name");
+bool ServerModel::initialise(uint64_t uuid) {
+    bool ret = net->connect(ip, port);
+    if (ret) {
+        if (uuid == 0) {
+            net->sendRequest("/register");
+        } else {
+            net->sendRequest("/login " + std::to_string(uuid));
+        }
+        net->sendRequest("/get_icon");
+        net->sendRequest("/get_name");
+        net->sendRequest("/get_all_metadata");
+    }
+    return ret;
 }
 
-void ServerModel::connect() {
-    net->connect(ip, port);
-    net->sendRequest("/login " + std::to_string(uuid));
-    net->sendRequest("/get_all_metadata");
-    net->sendRequest("/history 200");
+bool ServerModel::connect() {
+    bool ret = net->connect(ip, port);
+    if (ret) {
+        net->sendRequest("/login " + std::to_string(uuid));
+        net->sendRequest("/get_all_metadata");
+    }
+    return ret;
 }
 
 void ServerModel::addMessage(Message* msg) {
@@ -64,7 +72,7 @@ void ServerModel::addMessage(Message* msg) {
 
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
-//    std::cout << data.toUtf8().constData() << "\n";
+    std::cout << data.toUtf8().constData() << "\n";
     if (!msg["history"].is_null()) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
@@ -72,6 +80,7 @@ void ServerModel::handleNetwork(QString data) {
                             QString::fromStdString(peers[elem["author_uuid"].get<uint64_t>()].uname),
                             QString::fromStdString(elem["content"].get<std::string>()),
                             peers[elem["author_uuid"].get<uint64_t>()].pfp));
+            std::cout << elem["author_uuid"].get<uint64_t>() << "\n";
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
@@ -87,7 +96,10 @@ void ServerModel::handleNetwork(QString data) {
                 } else {
                     peers[elem_uuid].update(elem);
                 }
+                
             }
+            emit initialised(this);
+            //TODO also. not a good idea
         } else if (msg["command"].get<std::string>() == "get_icon") {
             std::vector<uint8_t> buf = base64_decode(msg["data"].get<std::string>());
             QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
@@ -97,7 +109,7 @@ void ServerModel::handleNetwork(QString data) {
             pfp_b64 = msg["data"].get<std::string>();
         } else if (msg["command"].get<std::string>() == "get_name") {
             name = msg["data"].get<std::string>();
-            emit initialised(this);
+            //emit initialised(this);
             //TODO not guarenteed t0 be initialised
         }
     } else if (!msg["content"].is_null()) {
