@@ -7,21 +7,21 @@
 #include <QRadioButton>
 
 NewServerView::NewServerView() {
-    layout = new QGridLayout();
+    layout = new QGridLayout(this);
     registerSelect = new QRadioButton("Register", this);
     loginSelect    = new QRadioButton("Login with UUID", this);
     registerSelect->setChecked(true);
     
-    ip   = new QLineEdit();
-    port = new QLineEdit();
-    UUID = new QLineEdit();
+    ip   = new QLineEdit(this);
+    port = new QLineEdit(this);
+    UUID = new QLineEdit(this);
 
-    lIp   = new QLabel("IP");
-    lPort = new QLabel("Port");
+    lIp   = new QLabel("IP", this);
+    lPort = new QLabel("Port", this);
     //lUUID = new QLabel("UUID")
     
-    back      = new QPushButton("Back");
-    b_connect = new QPushButton("Connect");
+    back      = new QPushButton("Back", this);
+    b_connect = new QPushButton("Connect", this);
     
     port->setInputMask("99999;");
     port->setText("2345");

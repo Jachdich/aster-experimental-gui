@@ -9,6 +9,10 @@
 class ServerModel;
 class MainWindow;
 class QMenu;
+class QAction;
+class QLineEdit;
+class QGridLayout;
+class QCloseEvent;
 
 class ServerButton : public QPushButton {
 Q_OBJECT
@@ -16,11 +20,33 @@ public:
     ServerModel* server;
     MainWindow* parent;
     QMenu* menu;
+    QAction* nick;
+    QAction* pfp;
 public:
     ServerButton(ServerModel* server, MainWindow* parent);
 
 public slots:
     void handleClick(bool);
     void onContextMenu(const QPoint&);
+    void changeNick();
+    void changePfp();
 };
+
+class NickChange : public QWidget {
+Q_OBJECT
+    QLineEdit* edit;
+    QPushButton* confirm;
+    QPushButton* cancel;
+    QGridLayout* layout;
+    void closeEvent(QCloseEvent *bar);
+public:
+    NickChange();
+public slots:
+    void cancelPressed();
+    void confirmPressed();
+signals:
+    void dismissed();
+    void changeNick(QString);
+};
+
 #endif

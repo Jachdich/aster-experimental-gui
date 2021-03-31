@@ -2,10 +2,22 @@
 
 #include "mainwindow.h"
 #include "servermodel.h"
+#include "base64.h"
 
 #include <QMenu>
 #include <Qt>
 #include <QPoint>
+#include <QAction>
+#include <QGridLayout>
+#include <QLineEdit>
+#include <QFileDialog>
+#include <QByteArray>
+#include <QBuffer>
+#include <QIODevice>
+#include <QBrush>
+#include <QImage>
+#include <QPainter>
+#include <vector>
 
 ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     //setText(QString::fromStdString(name));
@@ -20,11 +32,13 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     connect(this, &QPushButton::customContextMenuRequested, this, &ServerButton::onContextMenu);
 
     menu = new QMenu(this);
-    //self.popMenu.addAction(QtGui.QAction('test0', self))
-    //self.popMenu.addAction(QtGui.QAction('test1', self))
-    //self.popMenu.addSeparator()
-    menu->addAction(new QAction("e", this));
+    nick = new QAction("Change nickname", this);
+    pfp  = new QAction("Change picture",  this);
+    menu->addAction(nick);
+    menu->addAction(pfp);
 
+    connect(nick, &QAction::triggered, this, &ServerButton::changeNick);
+    connect(pfp,  &QAction::triggered, this, &ServerButton::changePfp);
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
 }
 
@@ -41,4 +55,75 @@ void ServerButton::handleClick(bool n) {
         blockSignals(false);
     }
     //TODO make this a signal/slot?
+}
+
+
+void ServerButton::changeNick() {
+    NickChange* popup = new NickChange();
+    connect(popup, &NickChange::dismissed,  [=]() { popup->hide(); delete popup; });
+    connect(popup, &NickChange::changeNick, [=](QString data) {
+        popup->hide();
+        delete popup; 
+        this->server->sendRequest(("/nick " + data.toUtf8()).constData());
+    });
+}
+
+void ServerButton::changePfp() {
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Open Image"), "", tr("PNG Images (*.png *.jpg *.jpeg)"));
+
+    if (fileName == "") {
+        return;
+    }
+    
+    QPixmap image;
+    image.load(fileName);
+    QPixmap scaled = image.scaled(32, 32, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    QImage out_img(32, 32, QImage::Format_ARGB32);
+    out_img.fill(Qt::transparent);
+  
+    QBrush brush(scaled);
+    QPainter painter(&out_img);
+    painter.setBrush(brush);
+    painter.setPen(Qt::NoPen);
+    painter.drawEllipse(0, 0, 32, 32);
+    painter.end();
+    QPixmap pm = QPixmap::fromImage(out_img);
+
+    QByteArray bytes;
+    QBuffer bytebuffer(&bytes);
+    bytebuffer.open(QIODevice::WriteOnly);
+    pm.save(&bytebuffer, "PNG");
+    std::vector<uint8_t> buffer(bytes.begin(), bytes.end());
+    std::string str = base64_encode((const uint8_t*)buffer.data(), (int)buffer.size());
+    this->server->sendRequest("/pfp " + str);
+}
+
+NickChange::NickChange(/*QWidget* parent*/)/* : QWidget(parent)*/ {
+    layout  = new QGridLayout(this);
+    edit    = new QLineEdit(this);
+    cancel  = new QPushButton("Cancel", this);
+    confirm = new QPushButton("Set nick", this);
+
+    layout->addWidget(edit, 0, 0, 1, 0);
+    layout->addWidget(cancel, 1, 0);
+    layout->addWidget(confirm, 1, 1);
+    connect(cancel,  &QPushButton::clicked, this, &NickChange::cancelPressed);
+    connect(confirm, &QPushButton::clicked, this, &NickChange::confirmPressed);
+    show();
+}
+
+#include <QCloseEvent>
+void NickChange::closeEvent(QCloseEvent *event) {
+    emit dismissed();
+    event->accept();
+}
+
+void NickChange::cancelPressed() {
+    emit dismissed();
+}
+
+void NickChange::confirmPressed() {
+    emit changeNick(edit->text());
 }
