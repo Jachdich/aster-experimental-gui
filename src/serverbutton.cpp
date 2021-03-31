@@ -22,8 +22,8 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     menu = new QMenu(this);
     //self.popMenu.addAction(QtGui.QAction('test0', self))
     //self.popMenu.addAction(QtGui.QAction('test1', self))
-    //self.popMenu.addSeparator()
-    menu->addAction(new QAction("e", this));
+    menu->addAction(new QAction("Set nickname", this));
+    menu->addAction(new QAction("Set profile picture", this));
 
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
 }

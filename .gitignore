@@ -7,3 +7,4 @@ gui
 .qmake.stash
 gui_working
 preferences.json
+preferences_working.json

@@ -28,8 +28,8 @@ public:
 public slots:
     void connectButton();
     void backButton();
-//    void registerPressed();
-//    void loginPressed();
+    void registerPressed();
+    void loginPressed();
 
 signals:
     void backPressed();

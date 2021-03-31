@@ -39,6 +39,9 @@ NewServerView::NewServerView() {
 
     connect(back,      &QPushButton::clicked, this, &NewServerView::backButton);
     connect(b_connect, &QPushButton::clicked, this, &NewServerView::connectButton);
+    connect(registerSelect, &QRadioButton::clicked, this, &NewServerView::registerPressed);
+    connect(loginSelect,    &QRadioButton::clicked, this, &NewServerView::loginPressed);
+    registerPressed();
     //connect()
 }
 
@@ -51,4 +54,12 @@ void NewServerView::connectButton() {
 }
 void NewServerView::backButton() {
     emit backPressed();
+}
+
+void NewServerView::loginPressed() {
+    UUID->setDisabled(false);
+}
+
+void NewServerView::registerPressed() {
+    UUID->setDisabled(true);
 }
