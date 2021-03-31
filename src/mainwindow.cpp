@@ -29,9 +29,17 @@ MainWindow::MainWindow() {
     file.close();
     
     std::ifstream ifs_preferences("preferences.json");
-    std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
-                        (std::istreambuf_iterator<char>()));
-    json value = json::parse(content);
+    json value;
+    if (ifs_preferences.good()) {
+        std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
+                            (std::istreambuf_iterator<char>()));
+        try {
+            value = json::parse(content);
+        } catch (json::parse_error &e) {
+            value = json::object();
+            value["servers"] = json::array();
+        }
+    }
 
     serverButtonLayout = new QHBoxLayout();
     serverContentLayout = new QStackedLayout();
