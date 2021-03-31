@@ -42,9 +42,9 @@ void ServerModel::sendRequest(std::string data) {
     this->net->sendRequest(data);
 }
 
-bool ServerModel::initialise(uint64_t uuid) {
-    bool ret = net->connect(ip, port);
-    if (ret) {
+std::error_code ServerModel::initialise(uint64_t uuid) {
+    std::error_code ret = net->connect(ip, port);
+    if (!ret) {
         if (uuid == 0) {
             net->sendRequest("/register");
         } else {
@@ -57,9 +57,9 @@ bool ServerModel::initialise(uint64_t uuid) {
     return ret;
 }
 
-bool ServerModel::connect() {
-    bool ret = net->connect(ip, port);
-    if (ret) {
+std::error_code ServerModel::connect() {
+    std::error_code ret = net->connect(ip, port);
+    if (!ret) {
         net->sendRequest("/login " + std::to_string(uuid));
         net->sendRequest("/get_all_metadata");
     }
@@ -98,8 +98,6 @@ void ServerModel::handleNetwork(QString data) {
                 }
                 
             }
-            emit initialised(this);
-            //TODO also. not a good idea
         } else if (msg["command"].get<std::string>() == "get_icon") {
             std::vector<uint8_t> buf = base64_decode(msg["data"].get<std::string>());
             QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
@@ -109,8 +107,12 @@ void ServerModel::handleNetwork(QString data) {
             pfp_b64 = msg["data"].get<std::string>();
         } else if (msg["command"].get<std::string>() == "get_name") {
             name = msg["data"].get<std::string>();
-            //emit initialised(this);
-            //TODO not guarenteed t0 be initialised
+        }
+        if (!isInitialised) {
+            if (uuid != 0 && name != "" && pfp_b64 != "") {
+                emit initialised(this);
+                isInitialised = true;
+            }
         }
     } else if (!msg["content"].is_null()) {
         messages->addMessage(new Message(

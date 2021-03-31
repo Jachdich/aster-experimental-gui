@@ -17,21 +17,22 @@ void ClientNetwork::handleNetworkPacket(std::string data) {
     emit msgRecvd(QString::fromStdString(data));
 }
 
-bool ClientNetwork::connect(std::string address, uint16_t port) {
+std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
     //std::cout << address << ":" << port << "\n";
     asio::error_code ec;
 
     asio::ip::tcp::resolver resolver(ctx);
     auto endpoint = resolver.resolve(address, std::to_string(port), ec);
-    if (!ec) return false;
+    if (ec) return ec;
     asio::connect(socket.next_layer(), endpoint, ec);
-    if (!ec) return false;
-    socket.handshake(asio::ssl::stream_base::client);
+    if (ec) return ec;
+    socket.handshake(asio::ssl::stream_base::client, ec);
+    if (ec) return ec; 
 
     readUntil();
     std::thread asioThread = std::thread([&]() {ctx.run();});
     asioThread.detach();
-    return true;
+    return ec;
 }
 
 void ClientNetwork::handler(std::error_code ec, size_t bytes_transferred) {

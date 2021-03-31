@@ -13,8 +13,21 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QStackedLayout>
+#include <iostream>
 
 MainWindow::MainWindow() {
+    std::ifstream lock("preferences.lock");
+    if (lock.good()) {
+        safeToSave = false;
+        ErrorPopup* popup = new ErrorPopup("Another instance of aster is already running!");
+        connect(popup, &ErrorPopup::dismissed, [=]() { delete popup; });
+        popup->show();
+        return;
+    }
+
+    std::ofstream file { "preferences.lock" };
+    file.close();
+    
     std::ifstream ifs_preferences("preferences.json");
     std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
                         (std::istreambuf_iterator<char>()));
@@ -33,8 +46,16 @@ MainWindow::MainWindow() {
         );
         //servers.push_back(server);
         connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
-        server->connect();
-
+        std::error_code error = server->connect();
+        if (error) {
+            std::cout << "Error\n";
+            delete server;
+            ErrorPopup* popup = new ErrorPopup(QString::fromStdString(
+                "Error: " + error.message() + " whilst connecting to server " +
+                elem["name"].get<std::string>() + " (" + elem["ip"].get<std::string>() + ":" + std::to_string(elem["port"].get<uint16_t>()) + ")"));
+            connect(popup, &ErrorPopup::dismissed, [=]() { delete popup; });
+            popup->show();
+        }
         /*
         ServerButton *button = new ServerButton(servers[servers.size() - 1], this);
         serverButtonLayout->addWidget(button);
@@ -70,6 +91,8 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::save() {
+    std::cout << safeToSave << "\n";
+    if (!safeToSave) return;
     json result = json::object();
     result["servers"] = json::array();
     for (ServerModel* server : servers) {
@@ -83,6 +106,12 @@ void MainWindow::save() {
     }
     std::ofstream os("preferences.json");
     os << result.dump();
+    std::ifstream lock("preferences.lock");
+    if (lock.good()) {
+        std::remove("preferences.lock");
+    } else {
+        //we got some serious avengers level threat if the file has been removed before the program has terminated
+    }
 }
 
 void MainWindow::handleServerClick(ServerButton* button) {
@@ -115,11 +144,14 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
         ""
     );
     connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
-    bool success = server->initialise(uuid);
-    if (!success) {
+    std::error_code error = server->initialise(uuid);
+    if (error) {
+        std::cout << "Error\n";
         delete server;
-        ErrorPopup* popup = new ErrorPopup("Error: Connection refused");
+        ErrorPopup* popup = new ErrorPopup(QString::fromStdString(
+            "Error: " + error.message() + " whilst connecting to server " + ip.toUtf8().constData() + ":" + std::to_string(port)));
         connect(popup, &ErrorPopup::dismissed, [=]() { delete popup; });
+        popup->show();
     }
 }
 

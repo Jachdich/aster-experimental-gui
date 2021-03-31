@@ -5,3 +5,5 @@ process.txt
 log.txt
 gui
 .qmake.stash
+gui_working
+preferences.json

@@ -25,6 +25,7 @@ class MainWindow : public QWidget {
     std::vector<ServerButton*> serverButtons;
     std::vector<ServerModel*> servers;
     size_t selectedServer = 0;
+    bool safeToSave = true;
 
 public:
     MainWindow();

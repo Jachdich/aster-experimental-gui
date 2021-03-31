@@ -20,14 +20,15 @@ Q_OBJECT
 public:
     QVBoxLayout* layout;
     MessageContainer* messages;
-    std::string name;
+    std::string name = "";
     std::string ip;
-    uint64_t uuid;
+    uint64_t uuid = 0;
     uint16_t port;
     QPixmap pfp;
-    std::string pfp_b64;
+    std::string pfp_b64 = "";
     std::unordered_map<uint64_t, Metadata> peers = {};
     ClientNetwork* net;
+    bool isInitialised = false;
     
     ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
     void handleNetwork(QString data);
@@ -36,8 +37,8 @@ public:
     void sendRequest(std::string data);
     void addMessage(Message* msg);
 
-    bool initialise(uint64_t uuid);
-    bool connect();
+    std::error_code initialise(uint64_t uuid);
+    std::error_code connect();
 
 signals:
     void initialised(ServerModel*);
