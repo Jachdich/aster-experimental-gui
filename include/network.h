@@ -15,13 +15,13 @@ public:
     inline ClientNetwork() : ssl_ctx(asio::ssl::context::tlsv12_client), socket(ctx, ssl_ctx) {
         
     }
-
+/*
     inline ~ClientNetwork() {
-    	asio::error_code ec;
-    	socket.shutdown(ec);
-    	ctx.stop();
+    	//asio::error_code ec;
+    	//socket.shutdown(ec);
+    	//ctx.stop();
     	//lmao the socket is closed, I dont give a fuck about errors
-    }
+    }*/
 
 signals:
     void msgRecvd(QString msg);

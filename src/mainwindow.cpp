@@ -155,8 +155,8 @@ void MainWindow::deleteServerButton(ServerButton* target) {
 	serverButtons.erase(std::remove(this->serverButtons.begin(), this->serverButtons.end(), target));
 	serverButtonLayout->removeWidget(target);
 	serverContentLayout->removeWidget(target->server);
-	delete target->server;
-	delete target; //TODO not a good idea
+	// delete target->server;
+	// delete target; //TODO not a good idea
 	//TODO there is a memory leak l
 }
 
