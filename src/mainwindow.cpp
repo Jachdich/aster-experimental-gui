@@ -138,9 +138,26 @@ void MainWindow::handleServerClick(ServerButton* button) {
 }
 
 void MainWindow::handleButton() {
+	if (input->text().remove(' ').isEmpty()) {
+		return;
+	}
     servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
     servers[selectedServer]->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
     input->setText("");
+}
+
+void MainWindow::deleteServerButton(ServerButton* target) {
+	std::cout << target << "\n";
+	for (ServerButton* b : this->serverButtons) {
+		std::cout << "bVec: " << b << "\n";
+	}
+	servers.erase(std::remove(this->servers.begin(), this->servers.end(), target->server));
+	serverButtons.erase(std::remove(this->serverButtons.begin(), this->serverButtons.end(), target));
+	serverButtonLayout->removeWidget(target);
+	serverContentLayout->removeWidget(target->server);
+	delete target->server;
+	delete target; //TODO not a good idea
+	//TODO there is a memory leak l
 }
 
 void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
@@ -161,6 +178,7 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
         connect(popup, &ErrorPopup::dismissed, [=]() { delete popup; });
         popup->show();
     }
+    closeNewServerView();
 }
 
 void MainWindow::onServerInitialised(ServerModel* server) {
@@ -170,6 +188,8 @@ void MainWindow::onServerInitialised(ServerModel* server) {
     serverButtonLayout->insertWidget(servers.size() - 1, button);
     serverContentLayout->insertWidget(servers.size() - 1, server);
     serverButtons.push_back(button);
+    std::cout << "Creating button " << button << "\n";
+    connect(button, &ServerButton::remove, this, &MainWindow::deleteServerButton);
     server->sendRequest("/history 200");
 }
 

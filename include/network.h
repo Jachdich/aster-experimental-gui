@@ -16,6 +16,13 @@ public:
         
     }
 
+    inline ~ClientNetwork() {
+    	asio::error_code ec;
+    	socket.shutdown(ec);
+    	ctx.stop();
+    	//lmao the socket is closed, I dont give a fuck about errors
+    }
+
 signals:
     void msgRecvd(QString msg);
 

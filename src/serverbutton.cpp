@@ -34,12 +34,27 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     menu = new QMenu(this);
     nick = new QAction("Change nickname", this);
     pfp  = new QAction("Change picture",  this);
+    rem  = new QAction("Remove server",   this);
+    del  = new QAction("Delete account",  this);
     menu->addAction(nick);
     menu->addAction(pfp);
+    menu->addAction(rem);
+    menu->addAction(del);
 
     connect(nick, &QAction::triggered, this, &ServerButton::changeNick);
     connect(pfp,  &QAction::triggered, this, &ServerButton::changePfp);
+    connect(del,  &QAction::triggered, this, &ServerButton::deleteAccount);
+    connect(rem,  &QAction::triggered, this, &ServerButton::removeServer);
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
+}
+
+void ServerButton::deleteAccount() {
+	server->sendRequest("/delete " + std::to_string(server->uuid));
+	removeServer();
+}
+
+void ServerButton::removeServer() {
+	emit remove(this);
 }
 
 void ServerButton::onContextMenu(const QPoint &point) {
@@ -70,7 +85,7 @@ void ServerButton::changeNick() {
 
 void ServerButton::changePfp() {
     QString fileName = QFileDialog::getOpenFileName(this,
-        tr("Open Image"), "", tr("PNG Images (*.png *.jpg *.jpeg)"));
+        tr("Open Image"), "", tr("Images (*.png *.jpg *.jpeg)"));
 
     if (fileName == "") {
         return;

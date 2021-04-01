@@ -5,9 +5,9 @@
 #include <QScrollBar>
 #include "message.h"
 
-MessageContainer::MessageContainer() {
-    layout = new QVBoxLayout();
-    widget = new QWidget();
+MessageContainer::MessageContainer(QWidget* parent) : QScrollArea(parent) {
+    widget = new QWidget(this);
+    layout = new QVBoxLayout(widget);
 
     QScrollBar* scrollbar = verticalScrollBar();
     connect(scrollbar, &QScrollBar::rangeChanged, this, &MessageContainer::sliderRangeChanged);
@@ -19,6 +19,12 @@ MessageContainer::MessageContainer() {
     setWidgetResizable(true);
     widget->setLayout(layout);
     this->setWidget(widget);
+}
+
+MessageContainer::~MessageContainer() {
+	for (Message* msg : messages) {
+		delete msg;
+	}
 }
 
 void MessageContainer::addMessage(Message* msg) {

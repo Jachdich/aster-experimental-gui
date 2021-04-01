@@ -23,11 +23,17 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
     QPixmap temp = pfp.scaled(32, 32);
     pfp = temp;
     net = new ClientNetwork();
-    layout = new QVBoxLayout();
-    messages = new MessageContainer();
+    layout = new QVBoxLayout(this);
+    messages = new MessageContainer(this);
     layout->addWidget(messages);
     setLayout(layout);
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
+}
+
+ServerModel::~ServerModel() {
+	delete net;
+	delete layout;
+	delete messages;
 }
 
 QString ServerModel::getName() {

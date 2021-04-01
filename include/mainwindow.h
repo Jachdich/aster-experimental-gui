@@ -35,6 +35,7 @@ public:
     void save();
 
 public slots:
+	void deleteServerButton(ServerButton*);
     void handleButton();
     void openNewServerView();
     void closeNewServerView();

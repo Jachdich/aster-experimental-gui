@@ -13,7 +13,8 @@ class MessageContainer : public QScrollArea {
     QWidget *widget;
     std::vector<Message*> messages;
 public:
-    MessageContainer();
+    MessageContainer(QWidget* parent);
+    ~MessageContainer();
 
     void addMessage(Message* msg);
 

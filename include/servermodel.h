@@ -31,6 +31,7 @@ public:
     bool isInitialised = false;
     
     ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
+	~ServerModel();
     void handleNetwork(QString data);
     QString getName();
     QPixmap *getPfp();
