@@ -155,9 +155,9 @@ void MainWindow::deleteServerButton(ServerButton* target) {
 	serverButtons.erase(std::remove(this->serverButtons.begin(), this->serverButtons.end(), target));
 	serverButtonLayout->removeWidget(target);
 	serverContentLayout->removeWidget(target->server);
-	// delete target->server;
-	// delete target; //TODO not a good idea
-	//TODO there is a memory leak l
+	//delete target->server;
+	delete target; //TODO not a good idea
+	//TODO there is a memory leak lol
 }
 
 void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {

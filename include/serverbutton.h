@@ -26,6 +26,7 @@ public:
     QAction* del;
 public:
     ServerButton(ServerModel* server, MainWindow* parent);
+    ~ServerButton();
 
 signals:
 	void remove(ServerButton*);

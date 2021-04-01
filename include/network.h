@@ -15,13 +15,13 @@ public:
     inline ClientNetwork() : ssl_ctx(asio::ssl::context::tlsv12_client), socket(ctx, ssl_ctx) {
         
     }
-/*
+
     inline ~ClientNetwork() {
-    	//asio::error_code ec;
-    	//socket.shutdown(ec);
-    	//ctx.stop();
+    	socket.lowest_layer().cancel();
+    	ctx.stop();
+    	asioThread.join();
     	//lmao the socket is closed, I dont give a fuck about errors
-    }*/
+    }
 
 signals:
     void msgRecvd(QString msg);
@@ -32,6 +32,7 @@ public:
     asio::io_context ctx;
     asio::ssl::context ssl_ctx;
     asio::ssl::stream<asio::ip::tcp::socket> socket;
+    std::thread asioThread;
     
     void readUntil();
     void handler(std::error_code ec, size_t bytes_transferred);

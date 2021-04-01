@@ -31,7 +31,7 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
 }
 
 ServerModel::~ServerModel() {
-	//delete net;
+	delete net;
 	delete layout;
 	delete messages;
 }

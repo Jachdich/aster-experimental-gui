@@ -30,8 +30,8 @@ std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
     if (ec) return ec; 
 
     readUntil();
-    std::thread asioThread = std::thread([&]() {ctx.run();});
-    asioThread.detach();
+    asioThread = std::thread([&]() {ctx.run();});
+    //asioThread.detach();
     return ec;
 }
 

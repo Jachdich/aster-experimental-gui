@@ -48,6 +48,15 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
 }
 
+ServerButton::~ServerButton() {
+    delete menu;
+    delete nick;
+    delete pfp;
+    delete rem;
+    delete del;
+    delete server;
+}
+
 void ServerButton::deleteAccount() {
 	server->sendRequest("/delete " + std::to_string(server->uuid));
 	removeServer();
