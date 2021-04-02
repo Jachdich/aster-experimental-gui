@@ -77,7 +77,7 @@ MainWindow::MainWindow() {
     addServerButton = new QPushButton("+", this);
     serverButtonLayout->addWidget(addServerButton);
 
-    setWindowTitle("Aster experimental GUI client");
+    setWindowTitle("Aster experimental GUI client 0.0.3a-dev");
     layout = new QVBoxLayout();
             
     nsv = new NewServerView();
@@ -156,7 +156,7 @@ void MainWindow::deleteServerButton(ServerButton* target) {
 	serverButtonLayout->removeWidget(target);
 	serverContentLayout->removeWidget(target->server);
 	//delete target->server;
-	delete target; //TODO not a good idea
+	target->deleteLater(); //TODO not a good idea
 	//TODO there is a memory leak lol
 }
 
