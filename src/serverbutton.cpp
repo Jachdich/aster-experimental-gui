@@ -32,6 +32,7 @@ ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
     connect(this, &QPushButton::customContextMenuRequested, this, &ServerButton::onContextMenu);
 
     menu = new QMenu(this);
+
     nick = new QAction("Change nickname", this);
     pfp  = new QAction("Change picture",  this);
     rem  = new QAction("Remove server",   this);
