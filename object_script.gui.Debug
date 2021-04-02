@@ -1,0 +1,16 @@
+debug/base64.o
+debug/main.o
+debug/message.o
+debug/metadata.o
+debug/serverbutton.o
+debug/clientnetwork.o
+debug/mainwindow.o
+debug/messagecontainer.o
+debug/newserverview.o
+debug/servermodel.o
+debug/errorpopup.o
+debug/moc_network.o
+debug/moc_serverbutton.o
+debug/moc_newserverview.o
+debug/moc_servermodel.o
+debug/moc_errorpopup.o

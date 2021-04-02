@@ -116,6 +116,7 @@ void MainWindow::save() {
     os << result.dump();
     std::ifstream lock("preferences.lock");
     if (lock.good()) {
+	lock.close();
         std::remove("preferences.lock");
     } else {
         //we got some serious avengers level threat if the file has been removed before the program has terminated

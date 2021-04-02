@@ -1,0 +1,16 @@
+release/base64.o
+release/main.o
+release/message.o
+release/metadata.o
+release/serverbutton.o
+release/clientnetwork.o
+release/mainwindow.o
+release/messagecontainer.o
+release/newserverview.o
+release/servermodel.o
+release/errorpopup.o
+release/moc_network.o
+release/moc_serverbutton.o
+release/moc_newserverview.o
+release/moc_servermodel.o
+release/moc_errorpopup.o
