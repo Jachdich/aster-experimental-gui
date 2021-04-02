@@ -58,8 +58,8 @@ QPixmap *ServerModel::getPfp() {
     return peers[uuid].pfp;
 }
 
-void ServerModel::sendRequest(std::string data) {
-    this->net->sendRequest(data);
+std::error_code ServerModel::sendRequest(std::string data) {
+    return this->net->sendRequest(data);
 }
 
 std::error_code ServerModel::initialise(uint64_t uuid) {

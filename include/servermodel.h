@@ -41,7 +41,7 @@ public:
     void handleNetwork(QString data);
     QString getName();
     QPixmap *getPfp();
-    void sendRequest(std::string data);
+    std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
 
     std::error_code initialise(uint64_t uuid);

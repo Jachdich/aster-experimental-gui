@@ -38,7 +38,7 @@ public:
     
     void readUntil();
     void handler(std::error_code ec, size_t bytes_transferred);
-    void sendRequest(std::string request);
+    std::error_code sendRequest(std::string request);
     void handleNetworkPacket(std::string data);
 
 };

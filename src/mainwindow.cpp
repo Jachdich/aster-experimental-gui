@@ -137,9 +137,16 @@ void MainWindow::handleButton() {
 	if (input->text().remove(' ').isEmpty()) {
 		return;
 	}
-    servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
-    servers[selectedServer]->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
-    input->setText("");
+    std::error_code ec = servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
+    if (!ec) {
+        servers[selectedServer]->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
+        input->setText("");
+    } else {
+        QMessageBox msg;
+        msg.setText(QString::fromStdString(
+            "Error: " + ec.message() + " whilst sending message to " + servers[selectedServer]->ip + ":" + std::to_string(servers[selectedServer]->port)));
+        msg.exec();
+    }
 }
 
 void MainWindow::deleteServerButton(ServerButton* target) {
