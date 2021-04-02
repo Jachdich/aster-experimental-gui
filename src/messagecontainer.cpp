@@ -22,9 +22,15 @@ MessageContainer::MessageContainer(QWidget* parent) : QScrollArea(parent) {
 }
 
 MessageContainer::~MessageContainer() {
-	for (Message* msg : messages) {
-		delete msg;
+	clear();
+}
+
+void MessageContainer::clear() {
+    for (Message* msg : messages) {
+        layout->removeWidget(msg);
+		msg->deleteLater();
 	}
+	messages.clear();
 }
 
 void MessageContainer::addMessage(Message* msg) {

@@ -24,12 +24,16 @@ public:
     QAction* pfp;
     QAction* rem;
     QAction* del;
+    bool active;
+    void setOffline();
+    void setOnline();
 public:
-    ServerButton(ServerModel* server, MainWindow* parent);
+    ServerButton(ServerModel* server, MainWindow* parent, bool active);
     ~ServerButton();
 
 signals:
 	void remove(ServerButton*);
+	void serverClicked(ServerButton*);
 
 public slots:
     void handleClick(bool);

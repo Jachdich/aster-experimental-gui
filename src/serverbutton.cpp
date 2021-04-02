@@ -17,16 +17,19 @@
 #include <QBrush>
 #include <QImage>
 #include <QPainter>
+#include <QIcon>
 #include <vector>
 
-ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
-    //setText(QString::fromStdString(name));
+ServerButton::ServerButton(ServerModel* server, MainWindow* parent, bool active) {
     this->server = server;
     this->parent = parent;
-    setIcon(server->pfp);
-    setToolTip(QString::fromStdString(server->name));
-    setIconSize(server->pfp.rect().size());
-    setCheckable(true);
+    this->active = active;
+
+    if (active) {
+        setOnline();
+    } else {
+        setOffline();
+    }
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QPushButton::customContextMenuRequested, this, &ServerButton::onContextMenu);
@@ -55,10 +58,23 @@ ServerButton::~ServerButton() {
     delete pfp;
     delete rem;
     delete del;
-    delete server;
+}
+
+void ServerButton::setOnline() {
+    setIcon(server->pfp);
+    setToolTip(QString::fromStdString(server->name));
+    setIconSize(server->pfp.rect().size());
+    setCheckable(true);
+}
+
+void ServerButton::setOffline() {
+    setIcon(QIcon("server_offline.png"));
+    setToolTip("This server is offline");
+    setIconSize(server->pfp.rect().size());
 }
 
 void ServerButton::deleteAccount() {
+    if (!active) return;
 	server->sendRequest("/delete " + std::to_string(server->uuid));
 	removeServer();
 }
@@ -72,8 +88,9 @@ void ServerButton::onContextMenu(const QPoint &point) {
 }
 
 void ServerButton::handleClick(bool n) {
+    if (!active) return;
     if (n) {
-        parent->handleServerClick(this);
+       emit serverClicked(this);
     } else {
         blockSignals(true);
         setChecked(true);
@@ -84,6 +101,7 @@ void ServerButton::handleClick(bool n) {
 
 
 void ServerButton::changeNick() {
+    if (!active) return;
     NickChange* popup = new NickChange();
     connect(popup, &NickChange::dismissed,  [=]() { popup->hide(); delete popup; });
     connect(popup, &NickChange::changeNick, [=](QString data) {
@@ -94,6 +112,7 @@ void ServerButton::changeNick() {
 }
 
 void ServerButton::changePfp() {
+    if (!active) return;
     QString fileName = QFileDialog::getOpenFileName(this,
         tr("Open Image"), "", tr("Images (*.png *.jpg *.jpeg)"));
 

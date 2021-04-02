@@ -11,14 +11,20 @@
 
 class ClientNetwork;
 class MainWindow;
-class QVBoxLayout;
+class QHBoxLayout;
+class QListWidget;
 class MessageContainer;
+class QListWidgetItem;
 class Message;
 
 class ServerModel : public QWidget {
 Q_OBJECT
+
+    void addChannel(std::string name);
+    void changeChannel(QListWidgetItem *current, QListWidgetItem *previous);
+    QHBoxLayout* layout;
+    QListWidget *channels;
 public:
-    QVBoxLayout* layout;
     MessageContainer* messages;
     std::string name = "";
     std::string ip;
@@ -42,7 +48,7 @@ public:
     std::error_code connect();
 
 signals:
-    void initialised(ServerModel*);
+    void initialised(ServerModel*, bool);
 };
 
 #endif

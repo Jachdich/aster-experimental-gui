@@ -17,7 +17,7 @@ public:
     ~MessageContainer();
 
     void addMessage(Message* msg);
-
+    void clear();
     void insertMessage(uint32_t idx, Message* msg);
 
 public slots:

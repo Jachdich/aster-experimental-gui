@@ -17,10 +17,11 @@ public:
     }
 
     inline ~ClientNetwork() {
-    	socket.lowest_layer().cancel();
-    	ctx.stop();
-    	asioThread.join();
-    	//lmao the socket is closed, I dont give a fuck about errors
+    	if (successfullyConnected) {
+    	    socket.lowest_layer().cancel();
+    	    ctx.stop();
+    	    asioThread.join();
+    	}
     }
 
 signals:
@@ -33,6 +34,7 @@ public:
     asio::ssl::context ssl_ctx;
     asio::ssl::stream<asio::ip::tcp::socket> socket;
     std::thread asioThread;
+    bool successfullyConnected = false;
     
     void readUntil();
     void handler(std::error_code ec, size_t bytes_transferred);

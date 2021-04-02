@@ -31,7 +31,7 @@ std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
 
     readUntil();
     asioThread = std::thread([&]() {ctx.run();});
-    //asioThread.detach();
+    successfullyConnected = true;
     return ec;
 }
 
