@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QRadioButton>
+#include <QWidget>
 
 NewServerView::NewServerView() {
     layout = new QGridLayout(this);
