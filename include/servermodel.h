@@ -46,6 +46,7 @@ public:
 
     std::error_code initialise(uint64_t uuid);
     std::error_code connect();
+    std::error_code updateMeta(QString uname, QString passwd, QString pfp_b64);
 
 signals:
     void initialised(ServerModel*, bool);

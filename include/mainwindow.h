@@ -31,13 +31,12 @@ class MainWindow : public QWidget {
     size_t selectedServer = 0;
     bool safeToSave = true;
 
-    QString uname;
-    QString passwd;
-    QString pfp_b64;
-
     void updateMeta();
 
 public:
+    QString uname;
+    QString passwd;
+    QString pfp_b64;
     MainWindow();
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);

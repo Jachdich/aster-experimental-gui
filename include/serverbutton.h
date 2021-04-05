@@ -20,8 +20,6 @@ public:
     ServerModel* server;
     MainWindow* parent;
     QMenu* menu;
-    QAction* nick;
-    QAction* pfp;
     QAction* rem;
     QAction* del;
     bool active;
@@ -38,27 +36,8 @@ signals:
 public slots:
     void handleClick(bool);
     void onContextMenu(const QPoint&);
-    void changeNick();
-    void changePfp();
     void removeServer();
     void deleteAccount();
-};
-
-class NickChange : public QWidget {
-Q_OBJECT
-    QLineEdit* edit;
-    QPushButton* confirm;
-    QPushButton* cancel;
-    QGridLayout* layout;
-    void closeEvent(QCloseEvent *bar);
-public:
-    NickChange();
-public slots:
-    void cancelPressed();
-    void confirmPressed();
-signals:
-    void dismissed();
-    void changeNick(QString);
 };
 
 #endif

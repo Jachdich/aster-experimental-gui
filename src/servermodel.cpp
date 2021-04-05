@@ -92,6 +92,16 @@ std::error_code ServerModel::connect() {
     return ret;
 }
 
+std::error_code ServerModel::updateMeta(QString uname, QString passwd, QString pfp_b64) {
+    std::error_code ec;
+    ec = net->sendRequest(("/nick " + uname).toUtf8().constData());
+    if (ec) return ec;
+    ec = net->sendRequest(("/passwd " + passwd).toUtf8().constData());
+    if (ec) return ec;
+    ec = net->sendRequest(("/pfp " + pfp_b64).toUtf8().constData());
+    return ec;
+}
+
 void ServerModel::addMessage(Message* msg) {
     messages->addMessage(msg);
 }

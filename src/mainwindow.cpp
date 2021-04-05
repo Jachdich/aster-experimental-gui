@@ -95,7 +95,7 @@ MainWindow::MainWindow() {
     layout = new QVBoxLayout(this);
             
     nsv = new NewServerView();
-    settings = new SettingsMenu(value);
+    settings = new SettingsMenu(this);
     
     input = new QLineEdit();
     layout->addLayout(serverButtonLayout);
@@ -117,7 +117,11 @@ MainWindow::MainWindow() {
 
 void MainWindow::updateMeta() {
     for (ServerModel* server : this->servers) {
-        server->updateMeta(uname, passwd, pfp_b64);
+        if (server->isInitialised) {
+            std::error_code ec = server->updateMeta(uname, passwd, pfp_b64);
+            if (ec) 
+                std::cout << ec.message() << "\n";
+        }
     }
 }
 
@@ -125,6 +129,10 @@ void MainWindow::save() {
     std::cout << safeToSave << "\n";
     if (!safeToSave) return;
     json result = json::object();
+    result["uname"] = this->uname.toUtf8().constData();
+    result["passwd"] = this->passwd.toUtf8().constData();
+    result["pfp"] = this->pfp_b64.toUtf8().constData();
+    
     result["servers"] = json::array();
     for (ServerModel* server : servers) {
         json obj = json::object();

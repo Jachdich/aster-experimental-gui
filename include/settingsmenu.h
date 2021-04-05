@@ -9,6 +9,7 @@ class QLabel;
 class QToolButton;
 class QPushButton;
 class QGridLayout;
+class MainWindow;
 
 #include "nlohmann/json.hpp"
 
@@ -28,11 +29,14 @@ class SettingsMenu : public QWidget {
 
     QPushButton* save;
     QPushButton* cancel;
-
+    MainWindow* parent;
+    
     QString pfp_b64;
+
+    void setDefaults();
     
 public:
-    SettingsMenu(json &currentSettings);
+    SettingsMenu(MainWindow*);
 
 public slots:
     void saveButton();
