@@ -107,3 +107,23 @@ QScrollArea {
 QLabel {
     font-size: 12px;
 }
+
+QListWidget {
+    selection-background-color: {bg};
+    background-color: {bg};
+    color: {fg};
+    show-decoration-selected: 0;
+}
+
+QListView::item:!selected {
+    color: #aaaaaa;
+}
+
+QListView::item:selected {
+    color: #ffffff
+    font-weight: 1000;
+}
+
+Message {
+    background-color: {dark};
+}
