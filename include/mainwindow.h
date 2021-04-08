@@ -4,6 +4,7 @@
 #include <string>
 #include <QWidget>
 #include <QString>
+#include "metadata.h"
 
 class MessageContainer;
 class NewServerView;
@@ -30,13 +31,12 @@ class MainWindow : public QWidget {
     std::vector<ServerModel*> servers;
     size_t selectedServer = 0;
     bool safeToSave = true;
+    bool settingsed = false;
 
     void updateMeta();
 
 public:
-    QString uname;
-    QString passwd;
-    QString pfp_b64;
+    ClientMeta meta;
     MainWindow();
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);

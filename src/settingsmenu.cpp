@@ -1,5 +1,5 @@
 #include "settingsmenu.h"
-#include "mainwindow.h"
+#include "metadata.h"
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QLabel>
@@ -13,13 +13,14 @@
 #include <QImage>
 #include <QPainter>
 #include <QIcon>
+#include <QMessageBox>
 
 #include "base64.h"
 #include <string>
 #include <vector>
 
-SettingsMenu::SettingsMenu(MainWindow* parent) {
-    this->parent = parent;
+SettingsMenu::SettingsMenu(ClientMeta* meta) {
+    this->meta = meta;
     layout = new QGridLayout(this);
     
     lUname = new QLabel("Username", this);
@@ -44,7 +45,7 @@ SettingsMenu::SettingsMenu(MainWindow* parent) {
     layout->addWidget(save, 3, 1);
     layout->addWidget(cancel, 3, 0);
 
-    pfp_b64 = parent->pfp_b64;
+    pfp_b64 = meta->pfp_b64;
 
     connect(save,   &QPushButton::clicked, this, &SettingsMenu::saveButton);
     connect(cancel, &QPushButton::clicked, this, &SettingsMenu::backButton);
@@ -53,20 +54,26 @@ SettingsMenu::SettingsMenu(MainWindow* parent) {
 
 void SettingsMenu::setDefaults() {
     pfp->setStyleSheet("QPushButton { border: none; }");
-    std::vector<uint8_t> buf = base64_decode(parent->pfp_b64.toUtf8().constData());
+    std::vector<uint8_t> buf = base64_decode(meta->pfp_b64.toUtf8().constData());
     QByteArray data = QByteArray((const char*)buf.data(), (int)buf.size());
     QPixmap icon;
     icon.loadFromData(data, "PNG");
     icon = icon.scaled(32, 32);
     pfp->setIcon(icon);
     pfp->setIconSize(icon.rect().size());
-    uname->setText(parent->uname);
-    passwd->setText(parent->passwd);
-    pfp_b64 = parent->pfp_b64;
+    uname->setText(meta->uname);
+    passwd->setText(meta->passwd);
+    pfp_b64 = meta->pfp_b64;
 }
 
 void SettingsMenu::saveButton() {
     //TOOD this is a really bad idea!
+    if (uname->text() == "" || passwd->text() == "") {
+		QMessageBox msg;
+		msg.setText("Username or password cannot be empty!");
+		msg.exec();
+		return;
+	}
     emit unameChanged(uname->text());
     emit pfpChanged(pfp_b64);
     emit passwdChanged(passwd->text());

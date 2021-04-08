@@ -44,9 +44,9 @@ public:
     std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
 
-    std::error_code initialise(uint64_t uuid);
-    std::error_code connect();
-    std::error_code updateMeta(QString uname, QString passwd, QString pfp_b64);
+    std::error_code initialise(uint64_t uuid, ClientMeta meta);
+    std::error_code connect(ClientMeta meta);
+    std::error_code updateMeta(ClientMeta meta);
 
 signals:
     void initialised(ServerModel*, bool);

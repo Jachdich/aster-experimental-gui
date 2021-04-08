@@ -2,6 +2,7 @@
 #define __METADATA_H
 
 #include <string>
+#include <QString>
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
@@ -14,6 +15,12 @@ struct Metadata {
     QPixmap *pfp;
     static Metadata from_json(json value);
     void update(json value);
+};
+
+struct ClientMeta {
+	QString uname;
+	QString passwd;
+	QString pfp_b64;
 };
 
 #endif

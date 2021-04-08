@@ -4,6 +4,7 @@
 #include "message.h"
 #include "messagecontainer.h"
 #include "base64.h"
+#include "metadata.h"
 #include <QByteArray>
 #include <QHBoxLayout>
 #include <QObject>
@@ -54,7 +55,6 @@ QString ServerModel::getName() {
     return QString::fromStdString(peers[uuid].uname);
 }
 QPixmap *ServerModel::getPfp() {
-    std::cout << uuid << "\n";
     return peers[uuid].pfp;
 }
 
@@ -62,7 +62,7 @@ std::error_code ServerModel::sendRequest(std::string data) {
     return this->net->sendRequest(data);
 }
 
-std::error_code ServerModel::initialise(uint64_t uuid) {
+std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
         if (uuid == 0) {
@@ -74,31 +74,33 @@ std::error_code ServerModel::initialise(uint64_t uuid) {
         net->sendRequest("/get_name");
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        updateMeta(meta);
     } else {
         emit initialised(this, false);
     }
     return ret;
 }
 
-std::error_code ServerModel::connect() {
+std::error_code ServerModel::connect(ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
         net->sendRequest("/login " + std::to_string(uuid));
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        updateMeta(meta);
     } else {
         emit initialised(this, false);
     }
     return ret;
 }
 
-std::error_code ServerModel::updateMeta(QString uname, QString passwd, QString pfp_b64) {
+std::error_code ServerModel::updateMeta(ClientMeta meta) {
     std::error_code ec;
-    ec = net->sendRequest(("/nick " + uname).toUtf8().constData());
+    ec = net->sendRequest(("/nick " + meta.uname).toUtf8().constData());
     if (ec) return ec;
-    ec = net->sendRequest(("/passwd " + passwd).toUtf8().constData());
+    ec = net->sendRequest(("/passwd " + meta.passwd).toUtf8().constData());
     if (ec) return ec;
-    ec = net->sendRequest(("/pfp " + pfp_b64).toUtf8().constData());
+    ec = net->sendRequest(("/pfp " + meta.pfp_b64).toUtf8().constData());
     return ec;
 }
 
@@ -112,7 +114,7 @@ void ServerModel::addChannel(std::string name) {
 
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
-    std::cout << data.toUtf8().constData() << "\n";
+    //std::cout << data.toUtf8().constData() << "\n";
     if (!msg["history"].is_null()) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
@@ -120,13 +122,11 @@ void ServerModel::handleNetwork(QString data) {
                             QString::fromStdString(peers[elem["author_uuid"].get<uint64_t>()].uname),
                             QString::fromStdString(elem["content"].get<std::string>()),
                             peers[elem["author_uuid"].get<uint64_t>()].pfp));
-            std::cout << elem["author_uuid"].get<uint64_t>() << "\n";
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
             if (msg["key"].get<std::string>() == "self_uuid") {
                 uuid = msg["value"].get<uint64_t>();
-                std::cout << "Set uuid to " << uuid << "\n";
             }
         } else if (msg["command"].get<std::string>() == "metadata") {
             for (auto &elem : msg["data"]) {
