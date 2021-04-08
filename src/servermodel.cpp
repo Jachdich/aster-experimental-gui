@@ -5,6 +5,7 @@
 #include "messagecontainer.h"
 #include "base64.h"
 #include "metadata.h"
+#include "channelwidget.h"
 #include <QByteArray>
 #include <QHBoxLayout>
 #include <QObject>
@@ -109,7 +110,9 @@ void ServerModel::addMessage(Message* msg) {
 }
 
 void ServerModel::addChannel(std::string name) {
-    channels->addItem(new QListWidgetItem(QString::fromStdString(name), channels));
+	ChannelWidget* item = new ChannelWidget(QString::fromStdString(name), channels);
+	item->setProperty("unread", true);
+    channels->addItem(item);
 }
 
 void ServerModel::handleNetwork(QString data) {

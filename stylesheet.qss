@@ -115,13 +115,23 @@ QListWidget {
     show-decoration-selected: 0;
 }
 
+
 QListView::item:!selected {
     color: #aaaaaa;
 }
 
 QListView::item:selected {
-    color: #ffffff
+    color: #ffffff;
     font-weight: 1000;
+}
+
+
+QListView::item[unread="true"] {
+    border: 2px solid red;
+}
+
+QListView::item[unread="false"] {
+    border: none;
 }
 
 Message {
