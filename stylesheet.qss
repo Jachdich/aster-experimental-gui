@@ -125,12 +125,11 @@ QListView::item:selected {
     font-weight: 1000;
 }
 
-
-QListView::item[unread="true"] {
+QLabel[unread="true"] {
     border: 2px solid red;
 }
 
-QListView::item[unread="false"] {
+QLabel[unread="false"] {
     border: none;
 }
 

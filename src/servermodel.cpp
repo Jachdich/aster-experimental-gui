@@ -11,6 +11,8 @@
 #include <QObject>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QLabel>
+#include <Qt>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -49,6 +51,7 @@ void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previ
     messages->clear();
     net->sendRequest("/join " + name);
     net->sendRequest("/history 200");
+    channels->itemWidget(current)->setProperty("unread", false);
 }
 
 
@@ -110,9 +113,11 @@ void ServerModel::addMessage(Message* msg) {
 }
 
 void ServerModel::addChannel(std::string name) {
-	ChannelWidget* item = new ChannelWidget(QString::fromStdString(name), channels);
-	item->setProperty("unread", true);
+	QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(name), channels);
+	QLabel* l = new QLabel(QString::fromStdString(name)); //TODO this is a memory leak
+	l->setProperty("unread", false);
     channels->addItem(item);
+    channels->setItemWidget(item, l);
 }
 
 void ServerModel::handleNetwork(QString data) {
@@ -166,6 +171,7 @@ void ServerModel::handleNetwork(QString data) {
             QString::fromStdString(peers[msg["author_uuid"].get<uint64_t>()].uname),
             QString::fromStdString(msg["content"].get<std::string>()),
             peers[msg["author_uuid"].get<uint64_t>()].pfp));
+        if ()
     } else {
         //???
         //ignore for now
