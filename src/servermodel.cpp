@@ -47,11 +47,14 @@ ServerModel::~ServerModel() {
 }
 
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
-    std::string name = current->text().toUtf8().constData();
+    currentChannel = current->text().toUtf8().constData();
     messages->clear();
-    net->sendRequest("/join " + name);
+    net->sendRequest("/join " + currentChannel);
     net->sendRequest("/history 200");
     channels->itemWidget(current)->setProperty("unread", false);
+    channels->itemWidget(current)->setProperty("selected", true);
+    if (previous != nullptr) 
+    	channels->itemWidget(previous)->setProperty("selected", false);
 }
 
 
@@ -115,14 +118,16 @@ void ServerModel::addMessage(Message* msg) {
 void ServerModel::addChannel(std::string name) {
 	QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(name), channels);
 	QLabel* l = new QLabel(QString::fromStdString(name)); //TODO this is a memory leak
+	channelWidgets.push_back(l);
 	l->setProperty("unread", false);
+	l->setProperty("selected", false);
     channels->addItem(item);
     channels->setItemWidget(item, l);
 }
 
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
-    //std::cout << data.toUtf8().constData() << "\n";
+    std::cout << data.toUtf8().constData() << "\n";
     if (!msg["history"].is_null()) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
@@ -159,6 +164,14 @@ void ServerModel::handleNetwork(QString data) {
             for (auto &elem : msg["data"]) {
                 addChannel(elem.get<std::string>());
             }
+        } else if (msg["command"].get<std::string>() == "unread") {
+        	std::string channel = msg["channel"].get<std::string>();
+        	for (QLabel* l : channelWidgets) { //TODO really inefficient lol
+        		if (l->text().toUtf8().constData() == channel) {
+        			l->setProperty("unread", true);
+        			std::cout << l->text().toUtf8().constData() << "\n";
+        		}
+        	}
         }
         if (!isInitialised) {
             if (uuid != 0 && name != "" && pfp_b64 != "") {
@@ -171,7 +184,6 @@ void ServerModel::handleNetwork(QString data) {
             QString::fromStdString(peers[msg["author_uuid"].get<uint64_t>()].uname),
             QString::fromStdString(msg["content"].get<std::string>()),
             peers[msg["author_uuid"].get<uint64_t>()].pfp));
-        if ()
     } else {
         //???
         //ignore for now

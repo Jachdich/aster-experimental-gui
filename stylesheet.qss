@@ -133,6 +133,16 @@ QLabel[unread="false"] {
     border: none;
 }
 
+QLabel[selected="true"] {
+	color: #ffffff;
+	font-weight: 1000;
+}
+
+QLabel[selected="false"] {
+	color: {fg};
+	font-weight: normal;
+}
+
 Message {
     background-color: {dark};
 }

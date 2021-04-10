@@ -16,6 +16,7 @@ class QListWidget;
 class MessageContainer;
 class QListWidgetItem;
 class Message;
+class QLabel;
 
 class ServerModel : public QWidget {
 Q_OBJECT
@@ -23,7 +24,9 @@ Q_OBJECT
     void addChannel(std::string name);
     void changeChannel(QListWidgetItem *current, QListWidgetItem *previous);
     QHBoxLayout* layout;
-    QListWidget *channels;
+    QListWidget* channels;
+    std::vector<QLabel*> channelWidgets;
+    std::string currentChannel = "general";
 public:
     MessageContainer* messages;
     std::string name = "";
