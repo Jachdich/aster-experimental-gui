@@ -31,7 +31,7 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
     net = new ClientNetwork();
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
-    channels->setFixedWidth(248);
+    channels->setFixedWidth(196);
     messages = new MessageContainer(this);
     layout->addWidget(channels);
     layout->addWidget(messages);
@@ -51,10 +51,15 @@ void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previ
     messages->clear();
     net->sendRequest("/join " + currentChannel);
     net->sendRequest("/history 200");
+    QWidget* currentWidget = channels->itemWidget(current);
+    QWidget* previousWidget = channels->itemWidget(previous);
     channels->itemWidget(current)->setProperty("unread", false);
     channels->itemWidget(current)->setProperty("selected", true);
-    if (previous != nullptr) 
+    if (previous != nullptr) {
     	channels->itemWidget(previous)->setProperty("selected", false);
+    	previousWidget->style()->polish(previousWidget);
+    }
+    currentWidget->style()->polish(currentWidget);
 }
 
 
@@ -169,7 +174,7 @@ void ServerModel::handleNetwork(QString data) {
         	for (QLabel* l : channelWidgets) { //TODO really inefficient lol
         		if (l->text().toUtf8().constData() == channel) {
         			l->setProperty("unread", true);
-        			std::cout << l->text().toUtf8().constData() << "\n";
+    				l->style()->polish(l);
         		}
         	}
         }

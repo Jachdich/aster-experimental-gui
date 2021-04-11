@@ -115,32 +115,30 @@ QListWidget {
     show-decoration-selected: 0;
 }
 
-
-QListView::item:!selected {
-    color: #aaaaaa;
-}
-
-QListView::item:selected {
-    color: #ffffff;
-    font-weight: 1000;
-}
-
 QLabel[unread="true"] {
-    border: 2px solid red;
+    border-left: 3px solid red;
+    margin-left: 5px;
+    padding-left: 2px;
+    color: #ffaaaa;
 }
 
 QLabel[unread="false"] {
     border: none;
+    padding-left: 2px;
+    margin-left: 5px;
 }
 
 QLabel[selected="true"] {
 	color: #ffffff;
-	font-weight: 1000;
+	border-left: 3px solid {fg};
+    padding-left: 2px;
+    margin-left: 3px;
 }
 
 QLabel[selected="false"] {
 	color: {fg};
-	font-weight: normal;
+    padding-left: 2px;
+    margin-left: 3px;
 }
 
 Message {
