@@ -15,6 +15,7 @@
 #include <QStackedLayout>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QFocusEvent>
 #include <QAction>
 #include <iostream>
 

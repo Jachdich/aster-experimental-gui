@@ -37,12 +37,15 @@ class MainWindow : public QWidget {
 
 public:
     ClientMeta meta;
+    bool focus = true;
     MainWindow();
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);
     void handleServerClick(ServerButton* button);
     void save();
-
+    inline void focusInEvent() { focus = true; }
+    inline void focusOutEvent() { focus = false; }
+    
 public slots:
 	void deleteServerButton(ServerButton*);
     void handleButton();
