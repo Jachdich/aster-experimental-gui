@@ -17,6 +17,7 @@ class MessageContainer;
 class QListWidgetItem;
 class Message;
 class QLabel;
+class OnlineView;
 
 class ServerModel : public QWidget {
 Q_OBJECT
@@ -29,6 +30,7 @@ Q_OBJECT
     std::string currentChannel = "general";
 public:
     MessageContainer* messages;
+    OnlineView*       online;
     std::string name = "";
     std::string ip;
     uint64_t uuid = 0;

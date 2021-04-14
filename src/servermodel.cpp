@@ -2,7 +2,9 @@
 #include "mainwindow.h"
 #include "network.h"
 #include "message.h"
+#include "smallprofile.h"
 #include "messagecontainer.h"
+#include "onlineview.h"
 #include "base64.h"
 #include "metadata.h"
 #include "channelwidget.h"
@@ -31,10 +33,14 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
     net = new ClientNetwork();
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
-    channels->setFixedWidth(196);
+    channels->setFixedWidth(128);
     messages = new MessageContainer(this);
+    online   = new OnlineView(this);
+    online->setFixedWidth(196);
+
     layout->addWidget(channels);
     layout->addWidget(messages);
+    layout->addWidget(online);
     setLayout(layout);
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
     QObject::connect(channels, &QListWidget::currentItemChanged, this, &ServerModel::changeChannel);
@@ -86,6 +92,7 @@ std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
         net->sendRequest("/get_name");
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        net->sendRequest("/online");
         updateMeta(meta);
     } else {
         emit initialised(this, false);
@@ -99,6 +106,7 @@ std::error_code ServerModel::connect(ClientMeta meta) {
         net->sendRequest("/login " + std::to_string(uuid));
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        net->sendRequest("/online");
         updateMeta(meta);
     } else {
         emit initialised(this, false);
@@ -154,7 +162,6 @@ void ServerModel::handleNetwork(QString data) {
                 } else {
                     peers[elem_uuid].update(elem);
                 }
-                
             }
         } else if (msg["command"].get<std::string>() == "get_icon") {
             std::vector<uint8_t> buf = base64_decode(msg["data"].get<std::string>());
@@ -177,6 +184,13 @@ void ServerModel::handleNetwork(QString data) {
     				l->style()->polish(l);
         		}
         	}
+        } else if (msg["command"].get<std::string>() == "online") {
+            online->clear();
+            for (auto &elem : msg["data"]) {
+                if (peers.count(elem.get<uint64_t>()) == 0) continue;
+                Metadata &m = peers[elem.get<uint64_t>()];
+                online->addProfile(new SmallProfile(QString::fromStdString(m.uname), m.pfp));
+            }
         }
         if (!isInitialised) {
             if (uuid != 0 && name != "" && pfp_b64 != "") {
