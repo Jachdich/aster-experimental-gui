@@ -35,6 +35,16 @@ int main(int argc, char *argv[]) {
     app.setStyleSheet(QString::fromStdString(formatStyleSheets(ss)));
     MainWindow window;
 
+    QObject::connect(&app, &QApplication::focusChanged, &app, [&window](QWidget* old, QWidget* now) {
+        if (old == nullptr) {
+            //Gained focus
+            window.focusInEvent();
+        } else if (now == nullptr) {
+            //Lost focus
+            window.focusOutEvent();
+        }
+    });
+
     int32_t ret = app.exec();
     window.save();
     return ret;

@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <string>
 #include <vector>
+#include <iostream>
 
 Metadata Metadata::from_json(json value) {
     std::string pfp_b64_json = value["pfp"].get<std::string>();

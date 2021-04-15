@@ -2,13 +2,19 @@
 #include "mainwindow.h"
 #include "network.h"
 #include "message.h"
+#include "smallprofile.h"
 #include "messagecontainer.h"
+#include "onlineview.h"
 #include "base64.h"
+#include "metadata.h"
+#include "channelwidget.h"
 #include <QByteArray>
 #include <QHBoxLayout>
 #include <QObject>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QLabel>
+#include <Qt>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -27,10 +33,14 @@ ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64
     net = new ClientNetwork();
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
-    channels->setFixedWidth(248);
+    channels->setFixedWidth(128);
     messages = new MessageContainer(this);
+    online   = new OnlineView(this);
+    online->setFixedWidth(196);
+
     layout->addWidget(channels);
     layout->addWidget(messages);
+    layout->addWidget(online);
     setLayout(layout);
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
     QObject::connect(channels, &QListWidget::currentItemChanged, this, &ServerModel::changeChannel);
@@ -43,10 +53,19 @@ ServerModel::~ServerModel() {
 }
 
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
-    std::string name = current->text().toUtf8().constData();
+    currentChannel = current->text().toUtf8().constData();
     messages->clear();
-    net->sendRequest("/join " + name);
+    net->sendRequest("/join " + currentChannel);
     net->sendRequest("/history 200");
+    QWidget* currentWidget = channels->itemWidget(current);
+    QWidget* previousWidget = channels->itemWidget(previous);
+    channels->itemWidget(current)->setProperty("unread", false);
+    channels->itemWidget(current)->setProperty("selected", true);
+    if (previous != nullptr) {
+    	channels->itemWidget(previous)->setProperty("selected", false);
+    	previousWidget->style()->polish(previousWidget);
+    }
+    currentWidget->style()->polish(currentWidget);
 }
 
 
@@ -54,7 +73,6 @@ QString ServerModel::getName() {
     return QString::fromStdString(peers[uuid].uname);
 }
 QPixmap *ServerModel::getPfp() {
-    std::cout << uuid << "\n";
     return peers[uuid].pfp;
 }
 
@@ -62,7 +80,7 @@ std::error_code ServerModel::sendRequest(std::string data) {
     return this->net->sendRequest(data);
 }
 
-std::error_code ServerModel::initialise(uint64_t uuid) {
+std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
         if (uuid == 0) {
@@ -74,22 +92,36 @@ std::error_code ServerModel::initialise(uint64_t uuid) {
         net->sendRequest("/get_name");
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        net->sendRequest("/online");
+        updateMeta(meta);
     } else {
         emit initialised(this, false);
     }
     return ret;
 }
 
-std::error_code ServerModel::connect() {
+std::error_code ServerModel::connect(ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
         net->sendRequest("/login " + std::to_string(uuid));
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");
+        net->sendRequest("/online");
+        updateMeta(meta);
     } else {
         emit initialised(this, false);
     }
     return ret;
+}
+
+std::error_code ServerModel::updateMeta(ClientMeta meta) {
+    std::error_code ec;
+    ec = net->sendRequest(("/nick " + meta.uname).toUtf8().constData());
+    if (ec) return ec;
+    ec = net->sendRequest(("/passwd " + meta.passwd).toUtf8().constData());
+    if (ec) return ec;
+    ec = net->sendRequest(("/pfp " + meta.pfp_b64).toUtf8().constData());
+    return ec;
 }
 
 void ServerModel::addMessage(Message* msg) {
@@ -97,7 +129,13 @@ void ServerModel::addMessage(Message* msg) {
 }
 
 void ServerModel::addChannel(std::string name) {
-    channels->addItem(new QListWidgetItem(QString::fromStdString(name), channels));
+	QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(name), channels);
+	QLabel* l = new QLabel(QString::fromStdString(name)); //TODO this is a memory leak
+	channelWidgets.push_back(l);
+	l->setProperty("unread", false);
+	l->setProperty("selected", false);
+    channels->addItem(item);
+    channels->setItemWidget(item, l);
 }
 
 void ServerModel::handleNetwork(QString data) {
@@ -110,13 +148,11 @@ void ServerModel::handleNetwork(QString data) {
                             QString::fromStdString(peers[elem["author_uuid"].get<uint64_t>()].uname),
                             QString::fromStdString(elem["content"].get<std::string>()),
                             peers[elem["author_uuid"].get<uint64_t>()].pfp));
-            std::cout << elem["author_uuid"].get<uint64_t>() << "\n";
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
             if (msg["key"].get<std::string>() == "self_uuid") {
                 uuid = msg["value"].get<uint64_t>();
-                std::cout << "Set uuid to " << uuid << "\n";
             }
         } else if (msg["command"].get<std::string>() == "metadata") {
             for (auto &elem : msg["data"]) {
@@ -126,7 +162,6 @@ void ServerModel::handleNetwork(QString data) {
                 } else {
                     peers[elem_uuid].update(elem);
                 }
-                
             }
         } else if (msg["command"].get<std::string>() == "get_icon") {
             std::vector<uint8_t> buf = base64_decode(msg["data"].get<std::string>());
@@ -140,6 +175,21 @@ void ServerModel::handleNetwork(QString data) {
         } else if (msg["command"].get<std::string>() == "get_channels") {
             for (auto &elem : msg["data"]) {
                 addChannel(elem.get<std::string>());
+            }
+        } else if (msg["command"].get<std::string>() == "unread") {
+        	std::string channel = msg["channel"].get<std::string>();
+        	for (QLabel* l : channelWidgets) { //TODO really inefficient lol
+        		if (l->text().toUtf8().constData() == channel) {
+        			l->setProperty("unread", true);
+    				l->style()->polish(l);
+        		}
+        	}
+        } else if (msg["command"].get<std::string>() == "online") {
+            online->clear();
+            for (auto &elem : msg["data"]) {
+                if (peers.count(elem.get<uint64_t>()) == 0) continue;
+                Metadata &m = peers[elem.get<uint64_t>()];
+                online->addProfile(new SmallProfile(QString::fromStdString(m.uname), m.pfp));
             }
         }
         if (!isInitialised) {

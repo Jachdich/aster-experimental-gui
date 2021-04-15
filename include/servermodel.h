@@ -16,6 +16,8 @@ class QListWidget;
 class MessageContainer;
 class QListWidgetItem;
 class Message;
+class QLabel;
+class OnlineView;
 
 class ServerModel : public QWidget {
 Q_OBJECT
@@ -23,9 +25,12 @@ Q_OBJECT
     void addChannel(std::string name);
     void changeChannel(QListWidgetItem *current, QListWidgetItem *previous);
     QHBoxLayout* layout;
-    QListWidget *channels;
+    QListWidget* channels;
+    std::vector<QLabel*> channelWidgets;
+    std::string currentChannel = "general";
 public:
     MessageContainer* messages;
+    OnlineView*       online;
     std::string name = "";
     std::string ip;
     uint64_t uuid = 0;
@@ -44,8 +49,9 @@ public:
     std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
 
-    std::error_code initialise(uint64_t uuid);
-    std::error_code connect();
+    std::error_code initialise(uint64_t uuid, ClientMeta meta);
+    std::error_code connect(ClientMeta meta);
+    std::error_code updateMeta(ClientMeta meta);
 
 signals:
     void initialised(ServerModel*, bool);

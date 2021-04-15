@@ -14,3 +14,4 @@ release
 openssl
 debug
 *Makefile*
+testing

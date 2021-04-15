@@ -7,6 +7,7 @@
 Message::Message(QString unamestr, QString cont, QPixmap *pfpPixmap) {
     layout = new QGridLayout(this);
     content = new QLabel(" " + unamestr + ": " + cont, this);
+    content->setObjectName("content");
     
     pfp = new QLabel(this);
     pfp->setFixedWidth(32);
