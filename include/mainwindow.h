@@ -35,10 +35,11 @@ public:
     void save();
 
 public slots:
+	void deleteServerButton(ServerButton*);
     void handleButton();
     void openNewServerView();
     void closeNewServerView();
     void addNewServer(QString ip, uint16_t port, uint64_t uuid);
-    void onServerInitialised(ServerModel* server);
+    void onServerInitialised(ServerModel* server, bool active);
 };
 #endif

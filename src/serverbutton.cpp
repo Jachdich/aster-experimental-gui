@@ -17,29 +17,70 @@
 #include <QBrush>
 #include <QImage>
 #include <QPainter>
+#include <QIcon>
 #include <vector>
 
-ServerButton::ServerButton(ServerModel* server, MainWindow* parent) {
-    //setText(QString::fromStdString(name));
+ServerButton::ServerButton(ServerModel* server, MainWindow* parent, bool active) {
     this->server = server;
     this->parent = parent;
-    setIcon(server->pfp);
-    setToolTip(QString::fromStdString(server->name));
-    setIconSize(server->pfp.rect().size());
-    setCheckable(true);
+    this->active = active;
+
+    if (active) {
+        setOnline();
+    } else {
+        setOffline();
+    }
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QPushButton::customContextMenuRequested, this, &ServerButton::onContextMenu);
 
     menu = new QMenu(this);
+
     nick = new QAction("Change nickname", this);
     pfp  = new QAction("Change picture",  this);
+    rem  = new QAction("Remove server",   this);
+    del  = new QAction("Delete account",  this);
     menu->addAction(nick);
     menu->addAction(pfp);
+    menu->addAction(rem);
+    menu->addAction(del);
 
     connect(nick, &QAction::triggered, this, &ServerButton::changeNick);
     connect(pfp,  &QAction::triggered, this, &ServerButton::changePfp);
+    connect(del,  &QAction::triggered, this, &ServerButton::deleteAccount);
+    connect(rem,  &QAction::triggered, this, &ServerButton::removeServer);
     connect(this, &QAbstractButton::toggled, this, &ServerButton::handleClick);
+}
+
+ServerButton::~ServerButton() {
+    delete menu;
+    delete nick;
+    delete pfp;
+    delete rem;
+    delete del;
+}
+
+void ServerButton::setOnline() {
+    setIcon(server->pfp);
+    setToolTip(QString::fromStdString(server->name));
+    setIconSize(server->pfp.rect().size());
+    setCheckable(true);
+}
+
+void ServerButton::setOffline() {
+    setIcon(QIcon("server_offline.png"));
+    setToolTip("This server is offline");
+    setIconSize(server->pfp.rect().size());
+}
+
+void ServerButton::deleteAccount() {
+    if (!active) return;
+	server->sendRequest("/delete " + std::to_string(server->uuid));
+	removeServer();
+}
+
+void ServerButton::removeServer() {
+	emit remove(this);
 }
 
 void ServerButton::onContextMenu(const QPoint &point) {
@@ -47,8 +88,9 @@ void ServerButton::onContextMenu(const QPoint &point) {
 }
 
 void ServerButton::handleClick(bool n) {
+    if (!active) return;
     if (n) {
-        parent->handleServerClick(this);
+       emit serverClicked(this);
     } else {
         blockSignals(true);
         setChecked(true);
@@ -59,6 +101,7 @@ void ServerButton::handleClick(bool n) {
 
 
 void ServerButton::changeNick() {
+    if (!active) return;
     NickChange* popup = new NickChange();
     connect(popup, &NickChange::dismissed,  [=]() { popup->hide(); delete popup; });
     connect(popup, &NickChange::changeNick, [=](QString data) {
@@ -69,8 +112,9 @@ void ServerButton::changeNick() {
 }
 
 void ServerButton::changePfp() {
+    if (!active) return;
     QString fileName = QFileDialog::getOpenFileName(this,
-        tr("Open Image"), "", tr("PNG Images (*.png *.jpg *.jpeg)"));
+        tr("Open Image"), "", tr("Images (*.png *.jpg *.jpeg)"));
 
     if (fileName == "") {
         return;

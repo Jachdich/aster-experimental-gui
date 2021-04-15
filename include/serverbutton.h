@@ -22,14 +22,26 @@ public:
     QMenu* menu;
     QAction* nick;
     QAction* pfp;
+    QAction* rem;
+    QAction* del;
+    bool active;
+    void setOffline();
+    void setOnline();
 public:
-    ServerButton(ServerModel* server, MainWindow* parent);
+    ServerButton(ServerModel* server, MainWindow* parent, bool active);
+    ~ServerButton();
+
+signals:
+	void remove(ServerButton*);
+	void serverClicked(ServerButton*);
 
 public slots:
     void handleClick(bool);
     void onContextMenu(const QPoint&);
     void changeNick();
     void changePfp();
+    void removeServer();
+    void deleteAccount();
 };
 
 class NickChange : public QWidget {
@@ -50,3 +62,4 @@ signals:
 };
 
 #endif
+

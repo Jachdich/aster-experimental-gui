@@ -16,6 +16,14 @@ public:
         
     }
 
+    inline ~ClientNetwork() {
+    	if (successfullyConnected) {
+    	    socket.lowest_layer().cancel();
+    	    ctx.stop();
+    	    asioThread.join();
+    	}
+    }
+
 signals:
     void msgRecvd(QString msg);
 
@@ -25,10 +33,12 @@ public:
     asio::io_context ctx;
     asio::ssl::context ssl_ctx;
     asio::ssl::stream<asio::ip::tcp::socket> socket;
+    std::thread asioThread;
+    bool successfullyConnected = false;
     
     void readUntil();
     void handler(std::error_code ec, size_t bytes_transferred);
-    void sendRequest(std::string request);
+    std::error_code sendRequest(std::string request);
     void handleNetworkPacket(std::string data);
 
 };

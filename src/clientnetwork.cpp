@@ -4,13 +4,11 @@
 
 using asio::ip::tcp;
 
-void ClientNetwork::sendRequest(std::string request) {
+std::error_code ClientNetwork::sendRequest(std::string request) {
     asio::error_code error;
 
     asio::write(socket, asio::buffer(request + "\n"), error);
-    if (error) {
-        std::cout << "ERROR SENDING: " << error.message() << "\n";
-    }
+    return error;
 }
 
 void ClientNetwork::handleNetworkPacket(std::string data) {
@@ -30,8 +28,8 @@ std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
     if (ec) return ec; 
 
     readUntil();
-    std::thread asioThread = std::thread([&]() {ctx.run();});
-    asioThread.detach();
+    asioThread = std::thread([&]() {ctx.run();});
+    successfullyConnected = true;
     return ec;
 }
 

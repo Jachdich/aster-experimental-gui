@@ -11,14 +11,20 @@
 
 class ClientNetwork;
 class MainWindow;
-class QVBoxLayout;
+class QHBoxLayout;
+class QListWidget;
 class MessageContainer;
+class QListWidgetItem;
 class Message;
 
 class ServerModel : public QWidget {
 Q_OBJECT
+
+    void addChannel(std::string name);
+    void changeChannel(QListWidgetItem *current, QListWidgetItem *previous);
+    QHBoxLayout* layout;
+    QListWidget *channels;
 public:
-    QVBoxLayout* layout;
     MessageContainer* messages;
     std::string name = "";
     std::string ip;
@@ -31,17 +37,18 @@ public:
     bool isInitialised = false;
     
     ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
+	~ServerModel();
     void handleNetwork(QString data);
     QString getName();
     QPixmap *getPfp();
-    void sendRequest(std::string data);
+    std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
 
     std::error_code initialise(uint64_t uuid);
     std::error_code connect();
 
 signals:
-    void initialised(ServerModel*);
+    void initialised(ServerModel*, bool);
 };
 
 #endif

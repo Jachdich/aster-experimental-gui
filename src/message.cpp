@@ -5,10 +5,10 @@
 #include <iostream>
 
 Message::Message(QString unamestr, QString cont, QPixmap *pfpPixmap) {
-    layout = new QGridLayout();
-    content = new QLabel(" " + unamestr + ": " + cont);
+    layout = new QGridLayout(this);
+    content = new QLabel(" " + unamestr + ": " + cont, this);
     
-    pfp = new QLabel();
+    pfp = new QLabel(this);
     pfp->setFixedWidth(32);
     pfp->setFixedHeight(32);
     if (pfpPixmap == nullptr) {

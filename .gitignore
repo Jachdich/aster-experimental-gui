@@ -7,3 +7,10 @@ gui
 .qmake.stash
 gui_working
 preferences.json
+preferences_working.json
+*.Debug
+*.Release
+release
+openssl
+debug
+*Makefile*
