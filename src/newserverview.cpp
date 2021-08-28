@@ -12,7 +12,7 @@ NewServerView::NewServerView() {
     registerSelect = new QRadioButton("Register", this);
     loginSelect    = new QRadioButton("Login with UUID", this);
     registerSelect->setChecked(true);
-    
+
     ip   = new QLineEdit(this);
     port = new QLineEdit(this);
     UUID = new QLineEdit(this);
@@ -20,13 +20,13 @@ NewServerView::NewServerView() {
     lIp   = new QLabel("IP", this);
     lPort = new QLabel("Port", this);
     //lUUID = new QLabel("UUID")
-    
+
     back      = new QPushButton("Back", this);
     b_connect = new QPushButton("Connect", this);
-    
+
     port->setInputMask("99999;");
     port->setText("2345");
-    
+
     layout->addWidget(lIp,            0, 0);
     layout->addWidget(lPort,          0, 1);
     layout->addWidget(ip,             1, 0);
@@ -50,6 +50,7 @@ void NewServerView::connectButton() {
     uint64_t uuid = 0;
     if (loginSelect->isChecked()) {
         uuid = UUID->text().toULong();
+//	std::cout << "UUID SET: " << uuid << "\n";
     }
     emit connectPressed(ip->text(), port->text().toInt(), uuid);
 }

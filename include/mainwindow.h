@@ -38,7 +38,7 @@ class MainWindow : public QWidget {
 public:
     ClientMeta meta;
     bool focus = true;
-    MainWindow();
+    MainWindow(std::string msg);
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);
     void handleServerClick(ServerButton* button);

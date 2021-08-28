@@ -48,7 +48,7 @@ public:
     QPixmap *getPfp();
     std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
-
+    void tokenLog(std::string);
     std::error_code initialise(uint64_t uuid, ClientMeta meta);
     std::error_code connect(ClientMeta meta);
     std::error_code updateMeta(ClientMeta meta);

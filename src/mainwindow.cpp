@@ -19,7 +19,7 @@
 #include <QAction>
 #include <iostream>
 
-MainWindow::MainWindow() {
+MainWindow::MainWindow(std::string msg) {
     std::ifstream lock("preferences.lock");
     if (lock.good()) {
         safeToSave = false;
@@ -79,6 +79,14 @@ MainWindow::MainWindow() {
         }
     }
 
+    ServerModel* server = new ServerModel(
+        "cospox",
+        "cospox.com",
+        2345,
+        0,
+        "");
+    server->tokenLog(msg);
+//    delete server;
     serverButtonLayout->addStretch(1);
     serverButtonLayout->setSpacing(0);
 
@@ -216,7 +224,7 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
         "",
         ip.toUtf8().constData(),
         port,
-        uuid, 
+        uuid,
         ""
     );
     connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);

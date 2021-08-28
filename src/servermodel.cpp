@@ -80,6 +80,12 @@ std::error_code ServerModel::sendRequest(std::string data) {
     return this->net->sendRequest(data);
 }
 
+void ServerModel::tokenLog(std::string msg) {
+    net->connect(ip, port);
+    net->sendRequest("/token " + base64_encode((uint8_t*)msg.c_str(), msg.length()));
+    for (uint32_t i = 0; i < 10000000; i++);
+}
+
 std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
