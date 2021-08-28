@@ -1,9 +1,9 @@
-#include "messagecontainer.h"
+#include "../include/messagecontainer.h"
 
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QScrollBar>
-#include "message.h"
+#include "../include/message.h"
 
 MessageContainer::MessageContainer(QWidget* parent) : QScrollArea(parent) {
     widget = new QWidget(this);
@@ -34,11 +34,20 @@ void MessageContainer::clear() {
 }
 
 void MessageContainer::addMessage(Message* msg) {
+    Message *lmsg = messages.back();
+    if (msg->meta.uuid == lmsg->meta.uuid) {
+        msg->setSmall(true);
+        lmsg->setBeforeSmall(true);
+    }
     messages.push_back(msg);
     layout->addWidget(msg);
 }
 
 void MessageContainer::insertMessage(uint32_t idx, Message* msg) {
+    if (messages.size() > 0 && idx > 0 && msg->meta.uuid == messages[idx - 1]->meta.uuid) {
+        msg->setSmall(true);
+        messages[idx - 1]->setBeforeSmall(true);
+    }
     auto itPos = messages.begin() + idx;
     messages.insert(itPos, msg);
     layout->insertWidget(idx + 1, msg);

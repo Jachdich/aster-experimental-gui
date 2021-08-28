@@ -19,10 +19,11 @@ std::string replaceAll(std::string str, const std::string& from, const std::stri
 
 std::string formatStyleSheets(std::string ssheet) {
     std::string dark = "#2a2a2a";
+    std::string darktransparent = "#30000000";
     std::string light = "#555555";
     std::string fg = "#cccccc";
     std::string bg = "#333333";
-    return replaceAll(replaceAll(replaceAll(replaceAll(ssheet, "{fg}", fg), "{bg}", bg), "{light}", light), "{dark}", dark);
+    return replaceAll(replaceAll(replaceAll(replaceAll(replaceAll(ssheet, "{fg}", fg), "{bg}", bg), "{light}", light), "{dark}", dark), "{darktransparent}", darktransparent);
 }
 
 int main(int argc, char *argv[]) {
@@ -47,5 +48,5 @@ int main(int argc, char *argv[]) {
 
     int32_t ret = app.exec();
     window.save();
-    return ret;
+    exit(ret);
 }

@@ -110,7 +110,17 @@ QLabel {
 }
 
 QLabel#content {
-    background-color: {dark};
+    background-color: {darktransparent};
+}
+
+QLabel#uname {
+    background-color: {darktransparent};
+}
+QLabel#pfp {
+    background-color: {darktransparent};
+}
+QLabel#timestamp {
+    background-color: {darktransparent};
 }
 
 QListWidget {
@@ -147,5 +157,9 @@ QLabel[selected="false"] {
 }
 
 Message {
-    background-color: {dark};
+    background-color: {bg};
+}
+
+Message:hover {
+    background-color: {light};
 }

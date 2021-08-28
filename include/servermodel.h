@@ -41,13 +41,14 @@ public:
     ClientNetwork* net;
     bool isInitialised = false;
     
-    ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
+    ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64);
 	~ServerModel();
     void handleNetwork(QString data);
     QString getName();
     QPixmap *getPfp();
     std::error_code sendRequest(std::string data);
     void addMessage(Message* msg);
+    const Metadata &getMeta();
 
     std::error_code initialise(uint64_t uuid, ClientMeta meta);
     std::error_code connect(ClientMeta meta);
