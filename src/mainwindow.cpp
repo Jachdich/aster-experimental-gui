@@ -6,6 +6,7 @@
 #include "serverbutton.h"
 #include "settingsmenu.h"
 
+#include <chrono>
 #include <fstream>
 
 #include <QLineEdit>
@@ -179,7 +180,9 @@ void MainWindow::handleButton() {
 	}
     std::error_code ec = servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
     if (!ec) {
-        servers[selectedServer]->addMessage(new Message(this, servers[selectedServer]->getMeta(), input->text(), servers[selectedServer]->getPfp(), 0));
+        int64_t p1 = std::chrono::duration_cast<std::chrono::seconds>(
+                           std::chrono::system_clock::now().time_since_epoch()).count();
+        servers[selectedServer]->addMessage(new Message(this, servers[selectedServer]->getMeta(), input->text(), servers[selectedServer]->getPfp(), p1));
         input->setText("");
     } else {
         QMessageBox msg;

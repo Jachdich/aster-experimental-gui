@@ -50,9 +50,24 @@ Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *
     }
 
     content->installEventFilter(this);
+    char buffer[64];
+    struct tm *time;
+    struct tm ct;
+    struct tm mt;
+    int64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
+                               std::chrono::system_clock::now().time_since_epoch()).count();
+    time = localtime(&current_time);
+    ct = *time;
+    time = localtime(&utc);
+    mt = *time;
 
-    
-    timestamp = new QLabel(QString::fromStdString(std::to_string(utc)));
+    if (mt.tm_yday == ct.tm_yday && mt.tm_year == ct.tm_year) {
+        strftime(buffer, sizeof(buffer), "%H:%M:%S", &mt);
+    } else {
+        strftime(buffer, sizeof(buffer), "%d/%m/%Y", &mt);
+    }
+
+    timestamp = new QLabel(QString::fromStdString(std::string(buffer)));
     content_str = cont;
     content->setObjectName("content");
     uname->setObjectName("uname");
