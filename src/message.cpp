@@ -41,6 +41,7 @@ Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *
     layout = new QGridLayout(this);
     uname = new QLabel(" " + QString::fromStdString(meta.uname) + ": ", this);
     content = new QLabel(cont, this);
+    timestamp = new QLabel(this);
     content->setWordWrap(true);
     content->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding));
     if (Qt::mightBeRichText(cont)) {
@@ -50,24 +51,10 @@ Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *
     }
 
     content->installEventFilter(this);
-    char buffer[64];
-    struct tm *time;
-    struct tm ct;
-    struct tm mt;
-    int64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
-                               std::chrono::system_clock::now().time_since_epoch()).count();
-    time = localtime(&current_time);
-    ct = *time;
-    time = localtime(&utc);
-    mt = *time;
 
-    if (mt.tm_yday == ct.tm_yday && mt.tm_year == ct.tm_year) {
-        strftime(buffer, sizeof(buffer), "%H:%M:%S", &mt);
-    } else {
-        strftime(buffer, sizeof(buffer), "%d/%m/%Y", &mt);
-    }
+    this->utc = utc;
+    setTime(false);
 
-    timestamp = new QLabel(QString::fromStdString(std::string(buffer)));
     content_str = cont;
     content->setObjectName("content");
     uname->setObjectName("uname");
@@ -106,6 +93,7 @@ const QString Message::getFullText() const {
 }
 
 void Message::setSmall(bool small) {
+    this->small = small;
     if (small) {
         pfp->hide();
         layout->setContentsMargins(42, 0, -1, 0);
@@ -118,7 +106,11 @@ void Message::setSmall(bool small) {
 void Message::setBeforeSmall(bool beforeSmall) {
     if (beforeSmall) {
         content->setAlignment(Qt::AlignBottom);
-        uname->setAlignment(Qt::AlignBottom);
+        if (!small) {
+            uname->setAlignment(Qt::AlignBottom);
+        } else {
+            uname->setAlignment(Qt::AlignTop);
+        }
         layout->setContentsMargins(
             layout->contentsMargins().left(),
             layout->contentsMargins().top(), -1, 0);
@@ -127,16 +119,36 @@ void Message::setBeforeSmall(bool beforeSmall) {
         uname->setAlignment(Qt::AlignVCenter);
     }
 }
-/*
+
 void Message::enterEvent(QEvent *) {
-    setProperty("hover", true);
-    style()->polish(this);
+    setTime(true);
 }
 
 void Message::leaveEvent(QEvent *) {
-    setProperty("hover", false);
-    style()->polish(this);
-}*/
+    setTime(false);
+}
+
+void Message::setTime(bool full) {
+    char buffer[64];
+    struct tm *time;
+    struct tm ct;
+    struct tm mt;
+    int64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
+                               std::chrono::system_clock::now().time_since_epoch()).count();
+    time = localtime(&current_time);
+    ct = *time;
+    time = localtime(&utc);
+    mt = *time;
+
+    if (full) {
+        strftime(buffer, sizeof(buffer), "%H:%M:%S %d/%m/%Y", &mt);
+    } else if (mt.tm_yday == ct.tm_yday && mt.tm_year == ct.tm_year) {
+        strftime(buffer, sizeof(buffer), "%H:%M:%S", &mt);
+    } else {
+        strftime(buffer, sizeof(buffer), "%d/%m/%Y", &mt);
+    }
+    this->timestamp->setText(QString::fromStdString(std::string(buffer)));
+}
 
 void Message::paintEvent(QPaintEvent *) {
     QStyleOption opt;

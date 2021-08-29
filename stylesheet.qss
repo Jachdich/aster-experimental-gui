@@ -119,8 +119,11 @@ QLabel#uname {
 QLabel#pfp {
     background-color: {darktransparent};
 }
+
 QLabel#timestamp {
     background-color: {darktransparent};
+    color: #888888;
+    font-size: 9px;
 }
 
 QListWidget {

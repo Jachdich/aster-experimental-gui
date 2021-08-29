@@ -95,7 +95,7 @@ MainWindow::MainWindow() {
     serverButtonLayout->addWidget(addServerButton);
     serverButtonLayout->addWidget(settingsButton);
 
-    setWindowTitle("Aster experimental GUI client 0.0.5a-dev");
+    setWindowTitle("Aster experimental GUI client 0.0.6a-dev");
     layout = new QVBoxLayout(this);
             
     nsv = new NewServerView();
