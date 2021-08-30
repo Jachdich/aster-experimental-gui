@@ -119,6 +119,13 @@ MainWindow::MainWindow() {
     show();
 }
 
+void MainWindow::focusInEvent() {
+    servers[selectedServer]->isInBackground = false;
+}
+void MainWindow::focusOutEvent() {
+    servers[selectedServer]->isInBackground = true;
+}
+
 void MainWindow::updateMeta() {
     for (ServerModel* server : this->servers) {
         if (server->isInitialised) {
@@ -165,11 +172,13 @@ void MainWindow::handleServerClick(ServerButton* button) {
         if (b != button) {
             b->blockSignals(true);
             b->setChecked(false);
+            b->server->isInBackground = true;
             b->blockSignals(false);
         } else {
             //sneaky trick to find the index in the same loop
             selectedServer = i;
             serverContentLayout->setCurrentIndex(selectedServer);
+            b->server->isInBackground = false;
         }
     }
 }

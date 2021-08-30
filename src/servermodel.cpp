@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <QtMultimedia/QMediaPlayer>
 
 ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64)
     : QWidget(parent) {
@@ -144,6 +145,14 @@ void ServerModel::addChannel(std::string name) {
     channels->setItemWidget(item, l);
 }
 
+void playPingSound() {
+	QMediaPlayer *player = new QMediaPlayer;
+	player->setMedia(QUrl::fromLocalFile("/home/james/Build/aster/gui/ping.mp3"));
+	player->setVolume(100);
+	player->play();
+	QWidget::connect(player, &QMediaPlayer::stateChanged, [player](QMediaPlayer::State) { player->deleteLater(); });
+}
+
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
     std::cout << data.toUtf8().constData() << "\n";
@@ -191,6 +200,7 @@ void ServerModel::handleNetwork(QString data) {
     				l->style()->polish(l);
         		}
         	}
+        	playPingSound();
         } else if (msg["command"].get<std::string>() == "online") {
             online->clear();
             for (auto &elem : msg["data"]) {
@@ -211,6 +221,9 @@ void ServerModel::handleNetwork(QString data) {
             QString::fromStdString(msg["content"].get<std::string>()),
             peers[msg["author_uuid"].get<uint64_t>()].pfp,
             msg["date"].get<int64_t>()));
+        if (isInBackground) {
+            playPingSound();
+        }
     } else {
         //???
         //ignore for now
