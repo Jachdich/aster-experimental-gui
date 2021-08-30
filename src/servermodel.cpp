@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include "network.h"
 #include "message.h"
+#include "main.h"
 #include "smallprofile.h"
 #include "messagecontainer.h"
 #include "onlineview.h"
@@ -147,7 +148,7 @@ void ServerModel::addChannel(std::string name) {
 
 void playPingSound() {
 	QMediaPlayer *player = new QMediaPlayer;
-	player->setMedia(QUrl::fromLocalFile("/home/james/Build/aster/gui/ping.mp3"));
+	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(prefpath + pathsep + "ping.mp3")));
 	player->setVolume(100);
 	player->play();
 	QWidget::connect(player, &QMediaPlayer::stateChanged, [player](QMediaPlayer::State) { player->deleteLater(); });

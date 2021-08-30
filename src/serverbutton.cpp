@@ -1,6 +1,7 @@
 #include "serverbutton.h"
 
 #include "mainwindow.h"
+#include "main.h"
 #include "servermodel.h"
 #include "base64.h"
 
@@ -52,7 +53,7 @@ void ServerButton::setOnline() {
 }
 
 void ServerButton::setOffline() {
-    setIcon(QIcon("server_offline.png"));
+    setIcon(QIcon(QString::fromStdString(prefpath + pathsep + "server_offline.png")));
     setToolTip("This server is offline");
     setIconSize(server->pfp.rect().size());
 }

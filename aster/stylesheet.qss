@@ -1,12 +1,18 @@
+@dark = #2a2a2a;
+@darktransparent = #30000000;
+@light = #555555;
+@fg = #cccccc;
+@bg = #333333;
+
 QWidget {
-    background-color: {bg};
-    color: {fg};
+    background-color: @bg;
+    color: @fg;
 }
 
 QScrollBar:vertical {
-    border: 2px solid {dark};
-    border-right: 1px solid {dark};
-    background: {bg};
+    border: 2px solid @dark;
+    border-right: 1px solid @dark;
+    background: @bg;
     width: 15px;
     margin: 0px 0px 0px 0px;
 }
@@ -18,25 +24,25 @@ QScrollBar::handle:vertical {
 }
 
 QScrollBar::add-line:vertical {
-    border: 0px solid {dark};
-    background: {bg};
+    border: 0px solid @dark;
+    background: @bg;
     height: 0px;
     subcontrol-position: bottom;
     subcontrol-origin: margin;
 }
 
 QScrollBar::sub-line:vertical {
-    border: 0px solid {dark};
-    background: {bg};
+    border: 0px solid @dark;
+    background: @bg;
     height: 0px;
     subcontrol-position: top;
     subcontrol-origin: margin;
 }
 
 QScrollBar:horizontal {
-    border: 2px solid {dark};
-    border-bottom: 1px solid {dark};
-    background: {bg};
+    border: 2px solid @dark;
+    border-bottom: 1px solid @dark;
+    background: @bg;
     height: 15px;
     margin: 0px 0px 0px 0px;
 }
@@ -64,28 +70,28 @@ QScrollBar::sub-line:horizontal {
 }
 
 QFrame {
-    background-color: {dark};
-    color: {fg};
+    background-color: @dark;
+    color: @fg;
 }
 
 QMenuBar {
-    background-color: {bg};
-    color: {fg};
+    background-color: @bg;
+    color: @fg;
 }
 
 QTabWidget {
-    background-color: {bg};
-    color: {fg};
+    background-color: @bg;
+    color: @fg;
 }
 
 QTabBar {
-    color: {fg};
-    background-color: {bg};
+    color: @fg;
+    background-color: @bg;
 }
 
 QPlainTextEdit {
-    background-color: {bg};
-    color: {fg};
+    background-color: @bg;
+    color: @fg;
     font-family: Courier;
 /*    font-size: 18px;*/
 }
@@ -96,40 +102,40 @@ ServerButton {
 
 ServerButton:on {
     border-top: 3px solid white;
-    border-bottom: 3px solid {bg};
+    border-bottom: 3px solid @bg;
 }
 
 QScrollArea {
-    background-color: {bg};
-    color: {fg};
+    background-color: @bg;
+    color: @fg;
 }
 
 QLabel {
     font-size: 12px;
-    background-color: {bg};
+    background-color: @bg;
 }
 
 QLabel#content {
-    background-color: {darktransparent};
+    background-color: @darktransparent;
 }
 
 QLabel#uname {
-    background-color: {darktransparent};
+    background-color: @darktransparent;
 }
 QLabel#pfp {
-    background-color: {darktransparent};
+    background-color: @darktransparent;
 }
 
 QLabel#timestamp {
-    background-color: {darktransparent};
+    background-color: @darktransparent;
     color: #888888;
     font-size: 9px;
 }
 
 QListWidget {
-    selection-background-color: {bg};
-    background-color: {bg};
-    color: {fg};
+    selection-background-color: @bg;
+    background-color: @bg;
+    color: @fg;
     show-decoration-selected: 0;
 }
 
@@ -148,21 +154,21 @@ QLabel[unread="false"] {
 
 QLabel[selected="true"] {
 	color: #ffffff;
-	border-left: 3px solid {fg};
+	border-left: 3px solid @fg;
     padding-left: 2px;
     margin-left: 3px;
 }
 
 QLabel[selected="false"] {
-	color: {fg};
+	color: @fg;
     padding-left: 2px;
     margin-left: 3px;
 }
 
 Message {
-    background-color: {bg};
+    background-color: @bg;
 }
 
 Message:hover {
-    background-color: {light};
+    background-color: @light;
 }

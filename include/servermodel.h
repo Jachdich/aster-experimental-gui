@@ -28,6 +28,7 @@ Q_OBJECT
     QListWidget* channels;
     std::vector<QLabel*> channelWidgets;
     std::string currentChannel = "general";
+    std::thread aliveThread;
 public:
     MessageContainer* messages;
     OnlineView*       online;
