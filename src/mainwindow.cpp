@@ -20,6 +20,7 @@
 #include <QPushButton>
 #include <QFocusEvent>
 #include <QAction>
+#include <QSplitter>
 #include <iostream>
 
 MainWindow::MainWindow() {
@@ -46,6 +47,8 @@ MainWindow::MainWindow() {
     value["uname"] = "";
     value["passwd"] = "";
     value["pfp"] = defaultPfp;
+    value["chan_split"] = 128;
+    value["online_split"] = 196;
 
     if (ifs_preferences.good()) {
         std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
@@ -60,6 +63,9 @@ MainWindow::MainWindow() {
         }
     }
 
+    chan_split = value["chan_split"].get<int>();
+    online_split = value["online_split"].get<int>();
+
     meta.uname   = QString::fromStdString(value["uname"].get<std::string>());
     meta.pfp_b64 = QString::fromStdString(value["pfp"].get<std::string>());
     meta.passwd  = QString::fromStdString(value["passwd"].get<std::string>());
@@ -73,9 +79,12 @@ MainWindow::MainWindow() {
             elem["ip"].get<std::string>(),
             elem["port"].get<uint16_t>(),
             elem["uuid"].get<uint64_t>(),
-            elem["pfp"].get<std::string>()
+            elem["pfp"].get<std::string>(),
+            chan_split,
+            online_split
         );
         connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
+        connect(server, &ServerModel::splitChanged, this, &MainWindow::splitChanged);
         std::error_code error = server->connect(meta);
         if (error) {
             //HEHE IGNORE IT LOL
@@ -121,6 +130,14 @@ MainWindow::MainWindow() {
     show();
 }
 
+void MainWindow::splitChanged(int chan, int online) {
+    chan_split = chan;
+    online_split = online;
+    for (ServerModel* server : this->servers) {
+        server->splitter->setSizes({chan, INT_MAX, online});
+    }
+}
+
 void MainWindow::focusInEvent() {
     servers[selectedServer]->isInBackground = false;
 }
@@ -145,6 +162,8 @@ void MainWindow::save() {
     result["uname"] = meta.uname.toUtf8().constData();
     result["passwd"] = meta.passwd.toUtf8().constData();
     result["pfp"] = meta.pfp_b64.toUtf8().constData();
+    result["chan_split"] = chan_split;
+    result["online_split"] = online_split;
     
     result["servers"] = json::array();
     for (ServerModel* server : servers) {
@@ -231,8 +250,10 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
         "",
         ip.toUtf8().constData(),
         port,
-        uuid, 
-        ""
+        uuid,
+        "",
+        chan_split,
+        online_split
     );
     connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
     std::error_code error = server->initialise(uuid, meta);

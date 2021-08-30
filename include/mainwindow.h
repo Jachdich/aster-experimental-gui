@@ -33,6 +33,8 @@ class MainWindow : public QWidget {
     bool safeToSave = true;
     bool settingsed = false;
 
+    int chan_split, online_split;
+
     void updateMeta();
 
 public:
@@ -52,6 +54,7 @@ public slots:
     void closeNewServerView();
     void openSettings();
     void closeSettings();
+    void splitChanged(int chan, int online);
     void addNewServer(QString ip, uint16_t port, uint64_t uuid);
     void onServerInitialised(ServerModel* server, bool active);
 };

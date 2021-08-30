@@ -20,8 +20,9 @@
 #include <string>
 #include <iostream>
 #include <QtMultimedia/QMediaPlayer>
-
-ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64)
+#include <QSplitter> 
+ 
+ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64, int sa, int sb)
     : QWidget(parent) {
     this->name = name;
     this->ip = ip;
@@ -36,23 +37,39 @@ ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint
     net = new ClientNetwork();
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
-    channels->setFixedWidth(128);
+    //channels->setFixedWidth(128);
     messages = new MessageContainer(this);
     online   = new OnlineView(this);
-    online->setFixedWidth(196);
+    splitter = new QSplitter(this);
+    
+    //online->setFixedWidth(196);
 
-    layout->addWidget(channels);
-    layout->addWidget(messages);
-    layout->addWidget(online);
+    splitter->addWidget(channels);
+    splitter->addWidget(messages);
+    splitter->addWidget(online);
+    layout->addWidget(splitter);
     setLayout(layout);
+
+    splitter->setStretchFactor(1, 1);
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(2, 0);
+    splitter->setSizes({sa, INT_MAX,  sb});
+    
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
     QObject::connect(channels, &QListWidget::currentItemChanged, this, &ServerModel::changeChannel);
+
+    QObject::connect(splitter, &QSplitter::splitterMoved, this, &ServerModel::splitterMoved);
 }
 
 ServerModel::~ServerModel() {
 	delete net;
 	delete layout;
 	delete messages;
+}
+
+void ServerModel::splitterMoved(int, int) {
+    auto sizes = splitter->sizes();
+    emit splitChanged(sizes[0], sizes[2]);
 }
 
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
