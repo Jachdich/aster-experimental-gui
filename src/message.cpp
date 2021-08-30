@@ -46,7 +46,7 @@ Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *
     if (Qt::mightBeRichText(cont)) {
         content->setTextFormat(Qt::RichText);
     } else {
-        content->setTextFormat(Qt::MarkdownText);
+        //content->setTextFormat(Qt::MarkdownText);
     }
 
     content->installEventFilter(this);
