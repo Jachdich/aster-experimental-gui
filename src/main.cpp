@@ -19,6 +19,11 @@ std::string prefpath;
 std::string pathsep = "/";
 #endif
 
+#if defined(__MACH__) || defined(__APPLE__)
+std::string pathsep = "/";
+#endif
+
+
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define WINDOS
 #endif
@@ -27,6 +32,7 @@ std::string pathsep = "/";
 #include <windows.h>
 #include <shlobj.h>
 #include >shlwapi.h>
+std::string pathsep = "\\";
 #endif
 
 void fatalmsg(std::string textmsg) {
@@ -49,11 +55,18 @@ void setup_prefpath() {
 #ifdef WINDOS
     TCHAR szPath[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, szPath))) {
-        pathsep = "\\";
         prefpath = std::string(szPath) + "\\aster";
     } else {
         fatalmsg("Could not get the appdata folder location, for some reason. I really have no idea what causes this, maybe like google \"SHGetFolderPath CSIDL_APPDATA fails\"?");
     }
+#endif
+
+#if defined(__MACH__) || defined(__APPLE__)
+    const char *homedir;
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+    prefpath = std::string(homedir) + "/Library/Preferences/aster";
 #endif
 }
 

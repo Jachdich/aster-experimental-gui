@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <thread>
 
 #include "metadata.h"
 
