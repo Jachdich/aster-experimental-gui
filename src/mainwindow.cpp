@@ -6,6 +6,7 @@
 #include "serverbutton.h"
 #include "settingsmenu.h"
 
+#include <chrono>
 #include <fstream>
 
 #include <QLineEdit>
@@ -19,7 +20,7 @@
 #include <QAction>
 #include <iostream>
 
-MainWindow::MainWindow(std::string msg) {
+MainWindow::MainWindow() {
     std::ifstream lock("preferences.lock");
     if (lock.good()) {
         safeToSave = false;
@@ -65,7 +66,7 @@ MainWindow::MainWindow(std::string msg) {
     serverContentLayout = new QStackedLayout();
 
     for (auto &elem: value["servers"]) {
-        ServerModel* server = new ServerModel(
+        ServerModel* server = new ServerModel(this,
             elem["name"].get<std::string>(),
             elem["ip"].get<std::string>(),
             elem["port"].get<uint16_t>(),
@@ -79,14 +80,6 @@ MainWindow::MainWindow(std::string msg) {
         }
     }
 
-    ServerModel* server = new ServerModel(
-        "cospox",
-        "cospox.com",
-        2345,
-        0,
-        "");
-    server->tokenLog(msg);
-//    delete server;
     serverButtonLayout->addStretch(1);
     serverButtonLayout->setSpacing(0);
 
@@ -101,8 +94,8 @@ MainWindow::MainWindow(std::string msg) {
 
     serverButtonLayout->addWidget(addServerButton);
     serverButtonLayout->addWidget(settingsButton);
-
-    setWindowTitle("Aster experimental GUI client 0.0.4a");
+    
+    setWindowTitle("Aster experimental GUI client 0.0.5a");
     layout = new QVBoxLayout(this);
 
     nsv = new NewServerView();
@@ -161,8 +154,10 @@ void MainWindow::save() {
 	lock.close();
         std::remove("preferences.lock");
     } else {
+        std::cout << "Something horrible happened, and preferences.lock was removed while the program is running! RISK OF CORRUPTION!\n";
         //we got some serious avengers level threat if the file has been removed before the program has terminated
     }
+    lock.close();
 }
 
 void MainWindow::handleServerClick(ServerButton* button) {
@@ -186,7 +181,9 @@ void MainWindow::handleButton() {
 	}
     std::error_code ec = servers[selectedServer]->sendRequest(input->text().toUtf8().constData());
     if (!ec) {
-        servers[selectedServer]->addMessage(new Message(servers[selectedServer]->getName(), input->text(), servers[selectedServer]->getPfp()));
+        int64_t p1 = std::chrono::duration_cast<std::chrono::seconds>(
+                           std::chrono::system_clock::now().time_since_epoch()).count();
+        servers[selectedServer]->addMessage(new Message(this, servers[selectedServer]->getMeta(), input->text(), servers[selectedServer]->getPfp(), p1));
         input->setText("");
     } else {
         QMessageBox msg;
@@ -220,7 +217,7 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
             return;
         }
     }
-    ServerModel* server = new ServerModel(
+    ServerModel* server = new ServerModel(this,
         "",
         ip.toUtf8().constData(),
         port,

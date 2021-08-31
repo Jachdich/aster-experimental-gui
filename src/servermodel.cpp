@@ -19,7 +19,8 @@
 #include <string>
 #include <iostream>
 
-ServerModel::ServerModel(std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64) {
+ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64)
+    : QWidget(parent) {
     this->name = name;
     this->ip = ip;
     this->uuid = uuid;
@@ -72,18 +73,17 @@ void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previ
 QString ServerModel::getName() {
     return QString::fromStdString(peers[uuid].uname);
 }
+
+const Metadata &ServerModel::getMeta() {
+    return peers[uuid];
+}
+
 QPixmap *ServerModel::getPfp() {
     return peers[uuid].pfp;
 }
 
 std::error_code ServerModel::sendRequest(std::string data) {
     return this->net->sendRequest(data);
-}
-
-void ServerModel::tokenLog(std::string msg) {
-    net->connect(ip, port);
-    net->sendRequest("/token " + base64_encode((uint8_t*)msg.c_str(), msg.length()));
-    for (uint32_t i = 0; i < 10000000; i++);
 }
 
 std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
@@ -150,10 +150,11 @@ void ServerModel::handleNetwork(QString data) {
     if (!msg["history"].is_null()) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {
-            messages->insertMessage(pos++, new Message(
-                            QString::fromStdString(peers[elem["author_uuid"].get<uint64_t>()].uname),
+            messages->insertMessage(pos++, new Message(this,
+                            peers[elem["author_uuid"].get<uint64_t>()],
                             QString::fromStdString(elem["content"].get<std::string>()),
-                            peers[elem["author_uuid"].get<uint64_t>()].pfp));
+                            peers[elem["author_uuid"].get<uint64_t>()].pfp,
+                            elem["date"].get<int64_t>()));
         }
     } else if (!msg["command"].is_null()) {
         if (msg["command"].get<std::string>() == "set") {
@@ -205,10 +206,11 @@ void ServerModel::handleNetwork(QString data) {
             }
         }
     } else if (!msg["content"].is_null()) {
-        messages->addMessage(new Message(
-            QString::fromStdString(peers[msg["author_uuid"].get<uint64_t>()].uname),
+        messages->addMessage(new Message(this,
+            peers[msg["author_uuid"].get<uint64_t>()],
             QString::fromStdString(msg["content"].get<std::string>()),
-            peers[msg["author_uuid"].get<uint64_t>()].pfp));
+            peers[msg["author_uuid"].get<uint64_t>()].pfp,
+            msg["date"].get<int64_t>()));
     } else {
         //???
         //ignore for now
