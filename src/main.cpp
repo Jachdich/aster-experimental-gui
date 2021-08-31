@@ -40,7 +40,7 @@ std::string pathsep = "/";
 #ifdef WINDOS
 #include <windows.h>
 #include <shlobj.h>
-#include >shlwapi.h>
+#include <shlwapi.h>
 std::string pathsep = "\\";
 #endif
 
@@ -64,7 +64,9 @@ void setup_prefpath() {
 #ifdef WINDOS
     TCHAR szPath[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, szPath))) {
-        prefpath = std::string(szPath) + "\\aster";
+        char c_szPath[MAX_PATH];
+        wcstombs(c_szPath, szPath, wcslen(szPath) + 1);
+        prefpath = std::string(c_szPath) + "\\aster";
     } else {
         fatalmsg("Could not get the appdata folder location, for some reason. I really have no idea what causes this, maybe like google \"SHGetFolderPath CSIDL_APPDATA fails\"?");
     }

@@ -5,7 +5,7 @@
 TEMPLATE = app
 TARGET = gui
 unix:INCLUDEPATH += include
-win32:INCLUDEPATH += openssl/include
+win32:INCLUDEPATH += include openssl/include
 unix:LIBS += -lssl -lcrypto
 win32:LIBS += -lws2_32 openssl/lib/libcrypto.lib openssl/lib/libssl.lib
 QT += widgets core multimedia
