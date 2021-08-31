@@ -4,11 +4,12 @@
 
 TEMPLATE = app
 TARGET = gui
-INCLUDEPATH += include
+unix:INCLUDEPATH += include
 win32:INCLUDEPATH += openssl/include
 unix:LIBS += -lssl -lcrypto
 win32:LIBS += -lws2_32 openssl/lib/libcrypto.lib openssl/lib/libssl.lib
-QT += widgets core
+QT += widgets core multimedia
+
 # The following define makes your compiler warn you if you use any
 # feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -21,8 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 # Input
-HEADERS += include/network.h include/serverbutton.h include/message.h include/metadata.h include/newserverview.h include/mainwindow.h include/messagecontainer.h include/servermodel.h include/settingsmenu.h include/channelwidget.h include/smallprofile.h include/onlineview.h
+HEADERS += include/main.h include/network.h include/serverbutton.h include/message.h include/metadata.h include/newserverview.h include/mainwindow.h include/messagecontainer.h include/servermodel.h include/settingsmenu.h include/channelwidget.h include/smallprofile.h include/onlineview.h
 SOURCES += src/base64.cpp src/main.cpp src/message.cpp src/metadata.cpp src/serverbutton.cpp src/clientnetwork.cpp src/mainwindow.cpp src/messagecontainer.cpp src/newserverview.cpp src/servermodel.cpp src/settingsmenu.cpp src/smallprofile.cpp src/onlineview.cpp
 
-QMAKE_CXXFLAGS += -g -std=c++17
-QMAKE_CXXFLAGS -= -O2
+QMAKE_CXXFLAGS += -std=c++17

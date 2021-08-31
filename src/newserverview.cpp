@@ -34,8 +34,8 @@ NewServerView::NewServerView() {
     layout->addWidget(registerSelect, 2, 0);
     layout->addWidget(loginSelect,    3, 0);
     layout->addWidget(UUID,           3, 1);
-    layout->addWidget(b_connect,      4, 0);
-    layout->addWidget(back,           4, 1);
+    layout->addWidget(b_connect,      4, 1);
+    layout->addWidget(back,           4, 0);
     setLayout(layout);
 
     connect(back,      &QPushButton::clicked, this, &NewServerView::backButton);

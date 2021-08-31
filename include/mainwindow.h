@@ -33,18 +33,19 @@ class MainWindow : public QWidget {
     bool safeToSave = true;
     bool settingsed = false;
 
+    int chan_split, online_split;
+
     void updateMeta();
 
 public:
     ClientMeta meta;
-    bool focus = true;
     MainWindow();
     void addMessage(Message *msg);
     void insertMessage(uint32_t pos, Message *msg);
     void handleServerClick(ServerButton* button);
     void save();
-    inline void focusInEvent() { focus = true; }
-    inline void focusOutEvent() { focus = false; }
+    void focusInEvent();
+    void focusOutEvent();
     
 public slots:
 	void deleteServerButton(ServerButton*);
@@ -53,6 +54,7 @@ public slots:
     void closeNewServerView();
     void openSettings();
     void closeSettings();
+    void splitChanged(int chan, int online);
     void addNewServer(QString ip, uint16_t port, uint64_t uuid);
     void onServerInitialised(ServerModel* server, bool active);
 };

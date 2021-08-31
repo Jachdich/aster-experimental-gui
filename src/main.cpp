@@ -1,11 +1,13 @@
 #include <QApplication>
 #include <QStyleFactory>
+#include <QMessageBox>
 
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <filesystem>
 
 #include "serverbutton.h"
 #include "mainwindow.h"
@@ -17,6 +19,66 @@
 
 namespace fs = std::filesystem;
 
+std::string prefpath;
+
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+std::string pathsep = "/";
+#endif
+
+#if defined(__MACH__) || defined(__APPLE__)
+std::string pathsep = "/";
+#endif
+
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#define WINDOS
+#endif
+
+#ifdef WINDOS
+#include <windows.h>
+#include <shlobj.h>
+#include >shlwapi.h>
+std::string pathsep = "\\";
+#endif
+
+void fatalmsg(std::string textmsg) {
+    QMessageBox msg;
+    msg.setText(QString::fromStdString(textmsg));
+    msg.exec();
+    exit(1);
+}
+
+void setup_prefpath() {
+#ifdef __linux__
+    const char *homedir;
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+
+    prefpath = std::string(homedir) + "/.config/aster";
+#endif
+
+#ifdef WINDOS
+    TCHAR szPath[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, szPath))) {
+        prefpath = std::string(szPath) + "\\aster";
+    } else {
+        fatalmsg("Could not get the appdata folder location, for some reason. I really have no idea what causes this, maybe like google \"SHGetFolderPath CSIDL_APPDATA fails\"?");
+    }
+#endif
+
+#if defined(__MACH__) || defined(__APPLE__)
+    const char *homedir;
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+    prefpath = std::string(homedir) + "/Library/Preferences/aster";
+#endif
+}
+
 std::string replaceAll(std::string str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -27,18 +89,55 @@ std::string replaceAll(std::string str, const std::string& from, const std::stri
 }
 
 std::string formatStyleSheets(std::string ssheet) {
-    std::string dark = "#2a2a2a";
-    std::string darktransparent = "#30000000";
-    std::string light = "#555555";
-    std::string fg = "#cccccc";
-    std::string bg = "#333333";
-    return replaceAll(replaceAll(replaceAll(replaceAll(replaceAll(ssheet, "{fg}", fg), "{bg}", bg), "{light}", light), "{dark}", dark), "{darktransparent}", darktransparent);
+    std::unordered_map<std::string, std::string> vars;
+    std::istringstream iss(ssheet);
+    std::string withoutDefs;
+    for (std::string line; std::getline(iss, line); ) {
+        if (line[0] == '@') {
+            const char *ln = line.c_str();
+            std::string varnm;
+            std::string varval;
+            while (*ln != ' ' && *ln != '=' && (unsigned)(ln - line.c_str()) < line.length()) {
+                varnm += *ln++;
+            }
+
+            while (*ln == ' ' && (unsigned)(ln - line.c_str()) < line.length()) ln++;
+            if (*ln != '=') {
+                fatalmsg("Error in stylesheets: expected '=' in var decleration '" + varnm + "'");
+            }
+            //TODO technocally buffer overflow?
+            ln++;
+            while (*ln == ' ' && (unsigned)(ln - line.c_str()) < line.length()) ln++;
+
+            while (*ln != ';' && (unsigned)(ln - line.c_str()) < line.length()) {
+                varval += *ln++;
+            }
+            vars[varnm] = varval;
+        } else {
+            withoutDefs += line + "\n";
+        }
+    }
+    ssheet = withoutDefs;
+    for (auto &item : vars) {
+        ssheet = replaceAll(ssheet, item.first, item.second);
+    }
+    return ssheet;
 }
 
 int main(int argc, char *argv[]) {
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     QApplication app(argc, argv);
-    std::ifstream ifs("stylesheet.qss");
+
+    setup_prefpath();
+    if (!std::filesystem::is_directory(std::filesystem::path(prefpath))) {
+        if (std::filesystem::exists(std::filesystem::path(prefpath))) {
+            fatalmsg("there's a file called aster at path \"" + prefpath + "\" and I dont know what it is. Please deal with it.");
+        } else {
+            std::filesystem::create_directory(prefpath);
+        }
+    }
+    
+    std::ifstream ifs(prefpath + pathsep + "stylesheet.qss");
     std::string ss((std::istreambuf_iterator<char>(ifs)),
                    (std::istreambuf_iterator<char>()));
     

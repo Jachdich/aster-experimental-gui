@@ -23,9 +23,12 @@ Q_OBJECT
     QLabel *uname;
     QLabel *timestamp;
     QString content_str;
+    bool small = false;
+    int64_t utc;
+    void setTime(bool full);
 protected:
-    //void enterEvent(QEvent *) override;
-    //void leaveEvent(QEvent *) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
     void paintEvent(QPaintEvent*) override;
 //    bool eventFilter(QObject *object, QEvent *event) override;
 public:

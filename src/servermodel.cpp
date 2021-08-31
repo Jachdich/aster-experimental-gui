@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include "network.h"
 #include "message.h"
+#include "main.h"
 #include "smallprofile.h"
 #include "messagecontainer.h"
 #include "onlineview.h"
@@ -18,8 +19,10 @@
 #include <vector>
 #include <string>
 #include <iostream>
-
-ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64)
+#include <QtMultimedia/QMediaPlayer>
+#include <QSplitter> 
+ 
+ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint16_t port, uint64_t uuid, std::string pfp_b64, int sa, int sb)
     : QWidget(parent) {
     this->name = name;
     this->ip = ip;
@@ -34,23 +37,39 @@ ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint
     net = new ClientNetwork();
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
-    channels->setFixedWidth(128);
+    //channels->setFixedWidth(128);
     messages = new MessageContainer(this);
     online   = new OnlineView(this);
-    online->setFixedWidth(196);
+    splitter = new QSplitter(this);
+    
+    //online->setFixedWidth(196);
 
-    layout->addWidget(channels);
-    layout->addWidget(messages);
-    layout->addWidget(online);
+    splitter->addWidget(channels);
+    splitter->addWidget(messages);
+    splitter->addWidget(online);
+    layout->addWidget(splitter);
     setLayout(layout);
+
+    splitter->setStretchFactor(1, 1);
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(2, 0);
+    splitter->setSizes({sa, INT_MAX,  sb});
+    
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
     QObject::connect(channels, &QListWidget::currentItemChanged, this, &ServerModel::changeChannel);
+
+    QObject::connect(splitter, &QSplitter::splitterMoved, this, &ServerModel::splitterMoved);
 }
 
 ServerModel::~ServerModel() {
 	delete net;
 	delete layout;
 	delete messages;
+}
+
+void ServerModel::splitterMoved(int, int) {
+    auto sizes = splitter->sizes();
+    emit splitChanged(sizes[0], sizes[2]);
 }
 
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
@@ -144,6 +163,14 @@ void ServerModel::addChannel(std::string name) {
     channels->setItemWidget(item, l);
 }
 
+void playPingSound() {
+	QMediaPlayer *player = new QMediaPlayer;
+	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(prefpath + pathsep + "ping.mp3")));
+	player->setVolume(100);
+	player->play();
+	QWidget::connect(player, &QMediaPlayer::stateChanged, [player](QMediaPlayer::State) { player->deleteLater(); });
+}
+
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
     std::cout << data.toUtf8().constData() << "\n";
@@ -191,6 +218,7 @@ void ServerModel::handleNetwork(QString data) {
     				l->style()->polish(l);
         		}
         	}
+        	playPingSound();
         } else if (msg["command"].get<std::string>() == "online") {
             online->clear();
             for (auto &elem : msg["data"]) {
@@ -211,6 +239,9 @@ void ServerModel::handleNetwork(QString data) {
             QString::fromStdString(msg["content"].get<std::string>()),
             peers[msg["author_uuid"].get<uint64_t>()].pfp,
             msg["date"].get<int64_t>()));
+        if (isInBackground) {
+            playPingSound();
+        }
     } else {
         //???
         //ignore for now
