@@ -9,6 +9,7 @@
 #include <thread>
 
 #include "metadata.h"
+#include "voiceclient.h"
 
 class ClientNetwork;
 class MainWindow;
@@ -32,6 +33,12 @@ Q_OBJECT
     std::vector<QLabel*> channelWidgets;
     std::string currentChannel = "general";
     std::thread aliveThread;
+
+    std::thread clientthread, netthread, soundthread;
+    void joinVoice();
+    void leaveVoice();
+    VoiceClient *vc = NULL;
+    asio::io_context ctx;
 public:
     QSplitter *splitter;
     MessageContainer* messages;

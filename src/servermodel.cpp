@@ -65,6 +65,54 @@ ServerModel::~ServerModel() {
 	delete net;
 	delete layout;
 	delete messages;
+	if (vc != NULL) {
+	    vc->stop();
+	    delete vc;
+	}
+}
+
+void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
+    int err;
+    if (enc != NULL) {
+        *enc = opus_encoder_create(48000, 1, APPLICATION, &err);
+        if (err < 0) {
+            fprintf(stderr, "failed to create encoder: %s\n", opus_strerror(err));
+            exit(1);
+        }
+
+        err = opus_encoder_ctl(*enc, OPUS_SET_BITRATE(BITRATE));
+        if (err < 0) {
+            fprintf(stderr, "failed to set bitrate: %s\n", opus_strerror(err));
+            exit(1);
+        }
+    }
+
+    if (dec != NULL) {
+        *dec = opus_decoder_create(SAMPLE_RATE, 1, &err);
+        if (err < 0) {
+            fprintf(stderr, "failed to create decoder: %s\n", opus_strerror(err));
+            exit(1);
+        }
+    }
+}
+
+void ServerModel::joinVoice() {
+    vc = new VoiceClient(ctx);
+    setup_opus(&vc->enc, &vc->dec);
+    vc->start_recv();
+
+    clientthread = std::thread([this]() { vc->run(69420); });
+    netthread =    std::thread([this]() { ctx.run(); });
+    soundthread =  std::thread([this]() { vc->soundio_run(); });
+}
+
+void ServerModel::leaveVoice() {
+    vc->stop();
+    delete vc;
+    vc = NULL;
+    soundthread.join();
+    netthread.join();
+    clientthread.join();
 }
 
 void ServerModel::splitterMoved(int, int) {
@@ -75,17 +123,22 @@ void ServerModel::splitterMoved(int, int) {
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
     currentChannel = current->text().toUtf8().constData();
     messages->clear();
-    net->sendRequest("/join " + currentChannel);
-    net->sendRequest("/history 200");
-    QWidget* currentWidget = channels->itemWidget(current);
-    QWidget* previousWidget = channels->itemWidget(previous);
-    channels->itemWidget(current)->setProperty("unread", false);
-    channels->itemWidget(current)->setProperty("selected", true);
-    if (previous != nullptr) {
-    	channels->itemWidget(previous)->setProperty("selected", false);
-    	previousWidget->style()->polish(previousWidget);
+    if (currentChannel[0] == '&') {
+        joinVoice();
+    } else {
+        if (vc != NULL) leaveVoice();
+        net->sendRequest("/join " + currentChannel);
+        net->sendRequest("/history 200");
+        QWidget* currentWidget = channels->itemWidget(current);
+        QWidget* previousWidget = channels->itemWidget(previous);
+        channels->itemWidget(current)->setProperty("unread", false);
+        channels->itemWidget(current)->setProperty("selected", true);
+        if (previous != nullptr) {
+        	channels->itemWidget(previous)->setProperty("selected", false);
+        	previousWidget->style()->polish(previousWidget);
+        }
+        currentWidget->style()->polish(currentWidget);
     }
-    currentWidget->style()->polish(currentWidget);
 }
 
 

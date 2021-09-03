@@ -14,7 +14,6 @@
 #include "base64.h"
 #include <filesystem>
 
-#include <windows.h>
 #include <regex>
 
 namespace fs = std::filesystem;

@@ -4,9 +4,9 @@
 
 TEMPLATE = app
 TARGET = gui
-unix:INCLUDEPATH += include
-win32:INCLUDEPATH += include openssl/include
-unix:LIBS += -lssl -lcrypto
+INCLUDEPATH += include
+win32:INCLUDEPATH += openssl/include
+LIBS += -lssl -lcrypto -lopus -lsoundio
 win32:LIBS += -lws2_32 openssl/lib/libcrypto.lib openssl/lib/libssl.lib
 QT += widgets core multimedia
 
@@ -22,7 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 # Input
-HEADERS += include/main.h include/network.h include/serverbutton.h include/message.h include/metadata.h include/newserverview.h include/mainwindow.h include/messagecontainer.h include/servermodel.h include/settingsmenu.h include/channelwidget.h include/smallprofile.h include/onlineview.h
-SOURCES += src/base64.cpp src/main.cpp src/message.cpp src/metadata.cpp src/serverbutton.cpp src/clientnetwork.cpp src/mainwindow.cpp src/messagecontainer.cpp src/newserverview.cpp src/servermodel.cpp src/settingsmenu.cpp src/smallprofile.cpp src/onlineview.cpp
+HEADERS += include/voiceclient.h include/main.h include/network.h include/serverbutton.h include/message.h include/metadata.h include/newserverview.h include/mainwindow.h include/messagecontainer.h include/servermodel.h include/settingsmenu.h include/channelwidget.h include/smallprofile.h include/onlineview.h
+SOURCES += src/voiceclient.cpp src/base64.cpp src/main.cpp src/message.cpp src/metadata.cpp src/serverbutton.cpp src/clientnetwork.cpp src/mainwindow.cpp src/messagecontainer.cpp src/newserverview.cpp src/servermodel.cpp src/settingsmenu.cpp src/smallprofile.cpp src/onlineview.cpp
 
-QMAKE_CXXFLAGS += -std=c++17
+QMAKE_CXXFLAGS += -std=c++17 -g
