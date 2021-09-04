@@ -12,7 +12,8 @@ void read_callback(struct SoundIoInStream *instream, int frame_count_min, int fr
     struct SoundIoChannelArea *areas;
     int err;
     VoiceClient *client = (VoiceClient*)instream->userdata;
-    
+    printf("inbuf: %d\n", client->inbuf.size());
+
     int frames_left = frame_count_max;
     for (;;) {
         int frame_count = frames_left;
@@ -20,7 +21,6 @@ void read_callback(struct SoundIoInStream *instream, int frame_count_min, int fr
             fprintf(stderr, "begin read error: %s", soundio_strerror(err));
             exit(1);
         }
-        //printf("Reading %d frames\n", frame_count);
         if (!frame_count)
             break;
         std::unique_lock<std::mutex> lock(client->inm);
@@ -65,7 +65,7 @@ void write_callback(struct SoundIoOutStream *outstream,
     //if (frame_count_min > frames_left || frames_left == 0) { 
     //    fprintf(stderr, "Buffer underflow #2 %d\n", buffer.size());
     //}
-    //printf("%d %d %d\n", frame_count_min, frame_count_max, client->outbuf.size());
+    printf("outbuf: %d %d %d\n", frame_count_min, frame_count_max, client->outbuf.size());
     int err;
 
     while (frames_left > 0) {
@@ -79,11 +79,11 @@ void write_callback(struct SoundIoOutStream *outstream,
         int done = false;
         for (int frame = 0; frame < frame_count; frame += 1) {
             int16_t val = 0;
-            if (client->outbuf.size() <= 1920 && !done) {
+            if (client->outbuf.size() <= FRAME_SIZE && !done) {
                 printf("Buffer underflow!\n");
                 done = true;
             }
-            if (client->outbuf.size() > 1920) {
+            if (client->outbuf.size() > FRAME_SIZE) {
                 val = client->outbuf.back();
                 client->outbuf.pop_back();
 
@@ -92,6 +92,12 @@ void write_callback(struct SoundIoOutStream *outstream,
                 //v[0] = v[1];
                 //v[1] = temp;
                 //printf("%d\n", val);
+            }
+            if (client->outbuf.size() > FRAME_SIZE * 4) {
+                printf("Buffer overflow!\n");
+                while (client->outbuf.size() > FRAME_SIZE * 4) {
+                    client->outbuf.pop_back();
+                }
             }
             for (int channel = 0; channel < outstream->layout.channel_count; channel += 1) {
                 int16_t *ptr = (int16_t*)(areas[channel].ptr + areas[channel].step * frame);
@@ -104,7 +110,7 @@ void write_callback(struct SoundIoOutStream *outstream,
             fprintf(stderr, "%s\n", soundio_strerror(err));
             exit(1);
         }
-        printf("Consumed %d frames\n", frame_count);
+        //printf("Consumed %d frames\n", frame_count);
         frames_left -= frame_count;
     }
 }
@@ -123,7 +129,7 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *indevice = soundio_get_input_device(soundio, default_in_device_index);
     struct SoundIoInStream *instream = soundio_instream_create(indevice);
 
-    instream->format = SoundIoFormatS16NE;
+    instream->format = SoundIoFormatS16LE;
     instream->read_callback = read_callback;
     instream->userdata = this;
     instream->software_latency = 0.1;
@@ -145,7 +151,7 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *outdevice = soundio_get_output_device(soundio, default_out_device_index);
     struct SoundIoOutStream *outstream = soundio_outstream_create(outdevice);
 
-    outstream->format = SoundIoFormatS16NE;
+    outstream->format = SoundIoFormatS16LE;
     outstream->write_callback = write_callback;
     outstream->userdata = this;
     outstream->software_latency = 0.1;
@@ -236,6 +242,8 @@ void VoiceClient::run(uint64_t uuid) {
     //setup_opus(&enc, &dec);
 
     while (!stopped || send_end) {
+        //sanity check: Sometimes, it can be requested to stop before/during ident period, just discard the ident req
+        if (send_end && send_ident) send_ident = 0;
         printf("%d %d %d\n", stopped, send_ident, send_end);
         if (send_ident) {
             uint8_t data[9];
