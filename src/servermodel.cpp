@@ -124,13 +124,9 @@ void ServerModel::splitterMoved(int, int) {
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
     currentChannel = current->text().toUtf8().constData();
     messages->clear();
-    if (currentChannel[0] == '&') {
-        joinVoice();
-    } else {
-        if (vc != NULL) leaveVoice();
-        net->sendRequest("/join " + currentChannel);
-        net->sendRequest("/history 200");
-    }
+
+    net->sendRequest("/join " + currentChannel);
+    net->sendRequest("/history 200");
     QWidget* currentWidget = channels->itemWidget(current);
     QWidget* previousWidget = channels->itemWidget(previous);
     channels->itemWidget(current)->setProperty("unread", false);
@@ -219,7 +215,7 @@ void ServerModel::addChannel(std::string name) {
 
 void playPingSound() {
 	QMediaPlayer *player = new QMediaPlayer;
-	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(prefpath + pathsep + "ping.mp3")));
+	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(respath + pathsep + "ping.mp3")));
 	player->setVolume(100);
 	player->play();
 	QWidget::connect(player, &QMediaPlayer::stateChanged, [player](QMediaPlayer::State) { player->deleteLater(); });

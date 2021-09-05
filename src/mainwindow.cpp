@@ -97,10 +97,10 @@ MainWindow::MainWindow() {
     addServerButton = new QPushButton(this);
     settingsButton  = new QPushButton(this);
 
-    addServerButton->setIcon(QIcon(QString::fromStdString(prefpath + pathsep + "add.png")));
+    addServerButton->setIcon(QIcon(QString::fromStdString(respath + pathsep + "add.png")));
     addServerButton->setToolTip("Add server");
 
-    settingsButton->setIcon(QIcon(QString::fromStdString(prefpath + pathsep + "settings.png")));
+    settingsButton->setIcon(QIcon(QString::fromStdString(respath + pathsep + "settings.png")));
     settingsButton->setToolTip("Settings");
 
     serverButtonLayout->addWidget(addServerButton);
