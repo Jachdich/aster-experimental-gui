@@ -123,7 +123,7 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *indevice = soundio_get_input_device(soundio, default_in_device_index);
     struct SoundIoInStream *instream = soundio_instream_create(indevice);
 
-    instream->format = SoundIoFormatS16NE;
+    instream->format = SoundIoFormatS16LE;
     instream->read_callback = read_callback;
     instream->userdata = this;
     instream->software_latency = 0.1;
@@ -145,7 +145,7 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *outdevice = soundio_get_output_device(soundio, default_out_device_index);
     struct SoundIoOutStream *outstream = soundio_outstream_create(outdevice);
 
-    outstream->format = SoundIoFormatS16NE;
+    outstream->format = SoundIoFormatS16LE;
     outstream->write_callback = write_callback;
     outstream->userdata = this;
     outstream->software_latency = 0.1;
