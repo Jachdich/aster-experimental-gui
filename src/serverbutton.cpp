@@ -53,7 +53,7 @@ void ServerButton::setOnline() {
 }
 
 void ServerButton::setOffline() {
-    setIcon(QIcon(QString::fromStdString(prefpath + pathsep + "server_offline.png")));
+    setIcon(QIcon(QString::fromStdString(respath + pathsep + "server_offline.png")));
     setToolTip("This server is offline");
     setIconSize(server->pfp.rect().size());
 }

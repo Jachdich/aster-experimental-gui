@@ -97,22 +97,23 @@ void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
 }
 
 void ServerModel::joinVoice() {
+    ctx.restart();
     vc = new VoiceClient(ctx);
     setup_opus(&vc->enc, &vc->dec);
     vc->start_recv();
 
-    clientthread = std::thread([this]() { vc->run(69420); });
+    clientthread = std::thread([this]() { vc->run(10000); });
     netthread =    std::thread([this]() { ctx.run(); });
     soundthread =  std::thread([this]() { vc->soundio_run(); });
 }
 
 void ServerModel::leaveVoice() {
     vc->stop();
-    delete vc;
-    vc = NULL;
     soundthread.join();
     netthread.join();
     clientthread.join();
+    vc = NULL;
+    delete vc;
 }
 
 void ServerModel::splitterMoved(int, int) {
@@ -123,22 +124,18 @@ void ServerModel::splitterMoved(int, int) {
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
     currentChannel = current->text().toUtf8().constData();
     messages->clear();
-    if (currentChannel[0] == '&') {
-        joinVoice();
-    } else {
-        if (vc != NULL) leaveVoice();
-        net->sendRequest("/join " + currentChannel);
-        net->sendRequest("/history 200");
-        QWidget* currentWidget = channels->itemWidget(current);
-        QWidget* previousWidget = channels->itemWidget(previous);
-        channels->itemWidget(current)->setProperty("unread", false);
-        channels->itemWidget(current)->setProperty("selected", true);
-        if (previous != nullptr) {
-        	channels->itemWidget(previous)->setProperty("selected", false);
-        	previousWidget->style()->polish(previousWidget);
-        }
-        currentWidget->style()->polish(currentWidget);
+
+    net->sendRequest("/join " + currentChannel);
+    net->sendRequest("/history 200");
+    QWidget* currentWidget = channels->itemWidget(current);
+    QWidget* previousWidget = channels->itemWidget(previous);
+    channels->itemWidget(current)->setProperty("unread", false);
+    channels->itemWidget(current)->setProperty("selected", true);
+    if (previous != nullptr) {
+    	channels->itemWidget(previous)->setProperty("selected", false);
+    	previousWidget->style()->polish(previousWidget);
     }
+    currentWidget->style()->polish(currentWidget);
 }
 
 
@@ -218,7 +215,7 @@ void ServerModel::addChannel(std::string name) {
 
 void playPingSound() {
 	QMediaPlayer *player = new QMediaPlayer;
-	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(prefpath + pathsep + "ping.mp3")));
+	player->setMedia(QUrl::fromLocalFile(QString::fromStdString(respath + pathsep + "ping.mp3")));
 	player->setVolume(100);
 	player->play();
 	QWidget::connect(player, &QMediaPlayer::stateChanged, [player](QMediaPlayer::State) { player->deleteLater(); });
