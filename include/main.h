@@ -3,4 +3,5 @@
 #include <string>
 extern std::string prefpath;
 extern std::string pathsep;
+extern std::string respath;
 #endif

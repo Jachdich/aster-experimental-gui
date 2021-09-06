@@ -19,6 +19,7 @@
 namespace fs = std::filesystem;
 
 std::string prefpath;
+std::string respath = "resources";
 
 #ifdef __linux__
 #include <unistd.h>
@@ -58,6 +59,15 @@ void setup_prefpath() {
     }
 
     prefpath = std::string(homedir) + "/.config/aster";
+    respath = "";
+    for (std::string searchdir : {"resources", "/usr/share/aster", "/usr/local/share/aster"}) {
+        if (std::filesystem::is_directory(std::filesystem::path(searchdir))) {
+            respath = searchdir;
+        }
+    }
+    if (respath == "") {
+        fatalmsg("Could't find the resources directory! Checked current dir, /usr/share/aster, /usr/local/share/aster");
+    }
 #endif
 
 #ifdef WINDOS
@@ -138,7 +148,7 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    std::ifstream ifs(prefpath + pathsep + "stylesheet.qss");
+    std::ifstream ifs(respath + pathsep + "stylesheet.qss");
     std::string ss((std::istreambuf_iterator<char>(ifs)),
                    (std::istreambuf_iterator<char>()));
     
