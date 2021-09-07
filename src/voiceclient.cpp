@@ -229,8 +229,13 @@ void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
 
 VoiceClient::VoiceClient(asio::io_context &ctx) : sock(ctx) {
     udp::resolver resolver(ctx);
-    udp::resolver::query query(udp::v4(), "127.0.0.1", "2346"); 
-    endp = *resolver.resolve(query).begin();
+    asio::error_code ec;
+    //udp::resolver::query query(udp::v4(), "127.0.0.1", "2346"); 
+    auto endpoints = resolver.resolve("127.0.0.1", "2346", ec); // *resolver.resolve(query).begin();
+    endp = *endpoints.begin();
+    if (ec) {
+        printf("Error: Couldn't connec to voice server: %s\n", ec.message());
+    }
     sock.open(udp::v4());
 }
 

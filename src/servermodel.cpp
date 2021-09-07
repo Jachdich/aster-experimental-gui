@@ -38,7 +38,7 @@ ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint
     layout = new QHBoxLayout(this);
     channels = new QListWidget(this);
     //channels->setFixedWidth(128);
-    messages = new MessageContainer(this);
+    messages = new MessageContainer(this, this);
     online   = new OnlineView(this);
     splitter = new QSplitter(this);
     
@@ -65,55 +65,6 @@ ServerModel::~ServerModel() {
 	delete net;
 	delete layout;
 	delete messages;
-	if (vc != NULL) {
-	    vc->stop();
-	    delete vc;
-	}
-}
-
-void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
-    int err;
-    if (enc != NULL) {
-        *enc = opus_encoder_create(48000, 1, APPLICATION, &err);
-        if (err < 0) {
-            fprintf(stderr, "failed to create encoder: %s\n", opus_strerror(err));
-            exit(1);
-        }
-
-        err = opus_encoder_ctl(*enc, OPUS_SET_BITRATE(BITRATE));
-        if (err < 0) {
-            fprintf(stderr, "failed to set bitrate: %s\n", opus_strerror(err));
-            exit(1);
-        }
-    }
-
-    if (dec != NULL) {
-        *dec = opus_decoder_create(SAMPLE_RATE, 1, &err);
-        if (err < 0) {
-            fprintf(stderr, "failed to create decoder: %s\n", opus_strerror(err));
-            exit(1);
-        }
-    }
-}
-
-void ServerModel::joinVoice() {
-    ctx.restart();
-    vc = new VoiceClient(ctx);
-    setup_opus(&vc->enc, &vc->dec);
-    vc->start_recv();
-
-    clientthread = std::thread([this]() { vc->run(10000); });
-    netthread =    std::thread([this]() { ctx.run(); });
-    soundthread =  std::thread([this]() { vc->soundio_run(); });
-}
-
-void ServerModel::leaveVoice() {
-    vc->stop();
-    soundthread.join();
-    netthread.join();
-    clientthread.join();
-    vc = NULL;
-    delete vc;
 }
 
 void ServerModel::splitterMoved(int, int) {
@@ -124,7 +75,9 @@ void ServerModel::splitterMoved(int, int) {
 void ServerModel::changeChannel(QListWidgetItem *current, QListWidgetItem *previous) {
     currentChannel = current->text().toUtf8().constData();
     messages->clear();
-
+    messages->setVoice(currentChannel[0] == '&');
+    messages->vc->changeChannel(currentChannel);
+        
     net->sendRequest("/join " + currentChannel);
     net->sendRequest("/history 200");
     QWidget* currentWidget = channels->itemWidget(current);

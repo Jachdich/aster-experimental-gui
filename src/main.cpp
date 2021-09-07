@@ -60,9 +60,10 @@ void setup_prefpath() {
 
     prefpath = std::string(homedir) + "/.config/aster";
     respath = "";
-    for (std::string searchdir : {"resources", "/usr/share/aster", "/usr/local/share/aster"}) {
+    for (std::string searchdir : {"./resources", "/usr/share/aster", "/usr/local/share/aster"}) {
         if (std::filesystem::is_directory(std::filesystem::path(searchdir))) {
             respath = searchdir;
+            break;
         }
     }
     if (respath == "") {
