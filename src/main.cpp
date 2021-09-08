@@ -58,7 +58,11 @@ void setup_prefpath() {
         homedir = getpwuid(getuid())->pw_dir;
     }
 
-    prefpath = std::string(homedir) + "/.config/aster";
+    if (std::filesystem::exists("preferences.json")) {
+        prefpath = ".";
+    } else {
+        prefpath = std::string(homedir) + "/.config/aster";
+    }
     respath = "";
     for (std::string searchdir : {"./resources", "/usr/share/aster", "/usr/local/share/aster"}) {
         if (std::filesystem::is_directory(std::filesystem::path(searchdir))) {

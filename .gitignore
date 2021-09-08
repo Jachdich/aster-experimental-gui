@@ -16,3 +16,4 @@ openssl
 debug
 *Makefile*
 testing
+preferences_here.json
