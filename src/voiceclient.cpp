@@ -205,9 +205,10 @@ void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
                 printf("Spurious ack\n");
             }
         } else if (req == REQ_ADATA) {
-            
+            uint64_t uuid;
+            memcpy(&uuid, netbuf + 1, 8);
             opus_int16 out[MAX_FRAME_SIZE];
-            int frame_size = opus_decode(dec, netbuf + 1, nBytes - 1, out, MAX_FRAME_SIZE, 0);
+            int frame_size = opus_decode(dec, netbuf + 9, nBytes - 1, out, MAX_FRAME_SIZE, 0);
             if (frame_size < 0) {
                 fprintf(stderr, "decoder failed: %s\n", opus_strerror(frame_size));
                 exit(1);
