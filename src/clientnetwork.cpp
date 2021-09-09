@@ -48,7 +48,7 @@ void ClientNetwork::handler(std::error_code ec, size_t bytes_transferred) {
         handleNetworkPacket(data);
 
     } else {
-        std::cerr << "ERROR: " <<  ec.message() << "\n";
+        std::cerr << "read ERROR: " <<  ec.message() << "\n";
         readUntil();
     }
 }

@@ -229,6 +229,8 @@ void ServerModel::handleNetwork(QString data) {
                 Metadata &m = peers[elem.get<uint64_t>()];
                 online->addProfile(new SmallProfile(QString::fromStdString(m.uname), m.pfp));
             }
+        } else if (msg["command"].get<std::string>() == "pong") {
+            //not sure
         }
         if (!isInitialised) {
             if (uuid != 0 && name != "" && pfp_b64 != "") {
@@ -237,9 +239,11 @@ void ServerModel::handleNetwork(QString data) {
             }
         }
     } else if (!msg["content"].is_null()) {
+        std::string content = msg["content"].get<std::string>();
         messages->addMessage(new Message(this,
-            peers[msg["author_uuid"].get<uint64_t>()],
-            QString::fromStdString(msg["content"].get<std::string>()),
+            peers[msg["author_uuid"].get<uint64_t>()], //https://xkcd.com/xxxx/info.0.json
+
+            QString::fromStdString(content),
             peers[msg["author_uuid"].get<uint64_t>()].pfp,
             msg["date"].get<int64_t>()));
         if (isInBackground) {

@@ -41,36 +41,11 @@ void VcContainer::changeChannel(const std::string &newChannel) {
     channel = newChannel;
 }
 
-void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
-    int err;
-    if (enc != NULL) {
-        *enc = opus_encoder_create(48000, 1, APPLICATION, &err);
-        if (err < 0) {
-            fprintf(stderr, "failed to create encoder: %s\n", opus_strerror(err));
-            exit(1);
-        }
-
-        err = opus_encoder_ctl(*enc, OPUS_SET_BITRATE(BITRATE));
-        if (err < 0) {
-            fprintf(stderr, "failed to set bitrate: %s\n", opus_strerror(err));
-            exit(1);
-        }
-    }
-
-    if (dec != NULL) {
-        *dec = opus_decoder_create(SAMPLE_RATE, 1, &err);
-        if (err < 0) {
-            fprintf(stderr, "failed to create decoder: %s\n", opus_strerror(err));
-            exit(1);
-        }
-    }
-}
-
 void VcContainer::joinVoice() {
     server->net->sendRequest("/joinvoice " + channel);
     ctx.restart();
     vc = new VoiceClient(ctx);
-    setup_opus(&vc->enc, &vc->dec);
+    setup_opus(&vc->enc, NULL);
     vc->start_recv();
 
     clientthread = std::thread([this]() { vc->run(server->uuid); });

@@ -38,6 +38,9 @@ void wrapLabelByTextSize(QLabel *label, int widthInPixels, QString orig_content)
     label->setText(text);
 }
 Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *pfpPixmap, int64_t utc) : QWidget(parent), meta(nmeta) {
+    if (cont.left(4) == QString("xkcd")) {
+        cont = "testing";
+    }
     layout = new QGridLayout(this);
     uname = new QLabel(" " + QString::fromStdString(meta.uname) + ": ", this);
     content = new QLabel(cont, this);

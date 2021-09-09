@@ -8,12 +8,40 @@ enum {
     REQ_END
 };
 
+#define FORMAT SoundIoFormatS16LE
+
+void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
+    int err;
+    if (enc != NULL) {
+        *enc = opus_encoder_create(48000, 1, APPLICATION, &err);
+        if (err < 0) {
+            fprintf(stderr, "failed to create encoder: %s\n", opus_strerror(err));
+            exit(1);
+        }
+
+        err = opus_encoder_ctl(*enc, OPUS_SET_BITRATE(BITRATE));
+        if (err < 0) {
+            fprintf(stderr, "failed to set bitrate: %s\n", opus_strerror(err));
+            exit(1);
+        }
+    }
+
+    if (dec != NULL) {
+        *dec = opus_decoder_create(SAMPLE_RATE, 1, &err);
+        if (err < 0) {
+            fprintf(stderr, "failed to create decoder: %s\n", opus_strerror(err));
+            exit(1);
+        }
+    }
+}
+
 void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
+    printf("Latency (in): %lf\n", instream->software_latency);
+
     struct SoundIoChannelArea *areas;
     int err;
     VoiceClient *client = (VoiceClient*)instream->userdata;
-    printf("inbuf: %d\n", client->inbuf.size());
-
+    bool a = false;
     int frames_left = frame_count_max;
     for (;;) {
         int frame_count = frames_left;
@@ -32,9 +60,9 @@ void read_callback(struct SoundIoInStream *instream, int frame_count_min, int fr
             fprintf(stderr, "Dropped %d frames due to internal overflow\n", frame_count);
         } else {
             for (int frame = 0; frame < frame_count; frame += 1) {
-                int16_t val;
+                opus_int16 val;
                 for (int ch = 0; ch < instream->layout.channel_count; ch += 1) {
-                    val = *areas[ch].ptr;
+                    val = *(int16_t*)areas[ch].ptr;
                     areas[ch].ptr += areas[ch].step;
                 }
                 client->inbuf.push_back(val);
@@ -57,15 +85,17 @@ void read_callback(struct SoundIoInStream *instream, int frame_count_min, int fr
 void write_callback(struct SoundIoOutStream *outstream,
                     int frame_count_min, int frame_count_max) {
     VoiceClient *client = (VoiceClient*)outstream->userdata;
-    
+     printf("Latency (out): %lf\n", outstream->software_latency);
+   
     struct SoundIoChannelArea *areas;
-    std::lock_guard<std::mutex> lock(client->outm);
     //int frames_left = min(frame_count_max, buffer.size());
     int frames_left = frame_count_max;
     //if (frame_count_min > frames_left || frames_left == 0) { 
     //    fprintf(stderr, "Buffer underflow #2 %d\n", buffer.size());
     //}
-    printf("outbuf: %d %d %d\n", frame_count_min, frame_count_max, client->outbuf.size());
+    for (auto &peer: client->voicepeers) {
+        printf("%d outbuf: %d\n", peer.first, peer.second.outbuf.size());
+    }
     int err;
 
     while (frames_left > 0) {
@@ -76,29 +106,30 @@ void write_callback(struct SoundIoOutStream *outstream,
         }
 
         if (!frame_count) break;
-        int done = false;
         for (int frame = 0; frame < frame_count; frame += 1) {
             int16_t val = 0;
-            if (client->outbuf.size() <= FRAME_SIZE && !done) {
-                printf("Buffer underflow!\n");
-                done = true;
-            }
-            if (client->outbuf.size() > FRAME_SIZE) {
-                val = client->outbuf.back();
-                client->outbuf.pop_back();
-
-                //uint8_t *v = (uint8_t*)&val;
-                //uint8_t temp = v[0];
-                //v[0] = v[1];
-                //v[1] = temp;
-                //printf("%d\n", val);
-            }
-            if (client->outbuf.size() > FRAME_SIZE * 4) {
-                printf("Buffer overflow!\n");
-                while (client->outbuf.size() > FRAME_SIZE * 4) {
-                    client->outbuf.pop_back();
+            //TODO mutex on voicepeers?
+            for (auto &peer: client->voicepeers) {
+                //if (client->outbuf.size() <= FRAME_SIZE && !done) {
+                //    printf("Buffer underflow!\n");
+                //    done = true;
+                //}
+                std::lock_guard<std::mutex> lock(peer.second.outm);
+                if (peer.second.outbuf.size() > FRAME_SIZE) {
+                    val = peer.second.outbuf.back();
+                    peer.second.outbuf.pop_back();
+                }
+                if (peer.second.outbuf.size() > FRAME_SIZE * 8) {
+                    printf("Buffer overflow!\n");
+                    //while (peer.second.outbuf.size() > FRAME_SIZE) {
+                        peer.second.outbuf.pop_back();
+                    //}
                 }
             }
+            //if (!done) {
+            //    printf("%04x\n", (uint16_t)val);
+            //    done = true;
+            //}
             for (int channel = 0; channel < outstream->layout.channel_count; channel += 1) {
                 int16_t *ptr = (int16_t*)(areas[channel].ptr + areas[channel].step * frame);
                 *ptr = val;
@@ -129,10 +160,10 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *indevice = soundio_get_input_device(soundio, default_in_device_index);
     struct SoundIoInStream *instream = soundio_instream_create(indevice);
 
-    instream->format = SoundIoFormatS16LE;
+    instream->format = FORMAT;
     instream->read_callback = read_callback;
     instream->userdata = this;
-    instream->software_latency = 0.1;
+    instream->software_latency = 0.2;
     
     if ((err = soundio_instream_open(instream))) {
         fprintf(stderr, "unable to open device: %s", soundio_strerror(err));
@@ -151,11 +182,13 @@ void VoiceClient::soundio_run() {
     struct SoundIoDevice *outdevice = soundio_get_output_device(soundio, default_out_device_index);
     struct SoundIoOutStream *outstream = soundio_outstream_create(outdevice);
 
-    outstream->format = SoundIoFormatS16LE;
+    outstream->format = FORMAT;
     outstream->write_callback = write_callback;
     outstream->userdata = this;
-    outstream->software_latency = 0.1;
-    
+    outstream->software_latency = 0.2;
+    fprintf(stderr, "Input device: %s\n", indevice->name);
+    fprintf(stderr, "Output device: %s\n", outdevice->name);
+    printf("out in format: %d %d\n", soundio_device_supports_format(outdevice, FORMAT), soundio_device_supports_format(indevice, FORMAT));
     if ((err = soundio_outstream_open(outstream))) {
         fprintf(stderr, "unable to open device: %s", soundio_strerror(err));
         exit(1);
@@ -188,11 +221,14 @@ void VoiceClient::start_recv() {
     );
 }
 
+VoicePeer::VoicePeer() {
+    setup_opus(NULL, &this->dec);
+}
+
 void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
     if (ec) {
         fprintf(stderr, "ERROR: %s\n", ec.message().c_str());
     } else {
-        printf("Recvd %d bytes\n", nBytes);
 
         uint8_t req = netbuf[0];
         if (req == REQ_ACK) {
@@ -207,16 +243,23 @@ void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
         } else if (req == REQ_ADATA) {
             uint64_t uuid;
             memcpy(&uuid, netbuf + 1, 8);
+//            printf("Recvd %d bytes from uuid %lu ", nBytes, uuid);
+
+            if (voicepeers.count(uuid) == 0) {
+                voicepeers[uuid];
+            }
+
+            VoicePeer &peer = voicepeers[uuid];
             opus_int16 out[MAX_FRAME_SIZE];
-            int frame_size = opus_decode(dec, netbuf + 9, nBytes - 1, out, MAX_FRAME_SIZE, 0);
+            int frame_size = opus_decode(peer.dec, netbuf + 9, nBytes - 9, out, MAX_FRAME_SIZE, 0);
             if (frame_size < 0) {
                 fprintf(stderr, "decoder failed: %s\n", opus_strerror(frame_size));
                 exit(1);
             }
             
-            std::lock_guard<std::mutex> lock(outm);
+            std::lock_guard<std::mutex> lock(peer.outm);
             for (int i = 0; i < frame_size; i++) {
-                outbuf.push_front(out[i]);
+                peer.outbuf.push_front(out[i]);
             }
         } else {
             printf("Got spurious request of type %d\n", req);
@@ -250,7 +293,6 @@ void VoiceClient::run(uint64_t uuid) {
     while (!stopped || send_end) {
         //sanity check: Sometimes, it can be requested to stop before/during ident period, just discard the ident req
         if (send_end && send_ident) send_ident = 0;
-        printf("%d %d %d\n", stopped, send_ident, send_end);
         if (send_ident) {
             uint8_t data[9];
             data[0] = REQ_IDENT;
@@ -282,11 +324,14 @@ void VoiceClient::run(uint64_t uuid) {
                 memcpy(sendbuf + 1, cbits, nBytes);
 
                 sock.send_to(asio::buffer(sendbuf, nBytes + 1), endp);
+                free(sendbuf);
             }
         }
     }
     opus_encoder_destroy(enc);
-    opus_decoder_destroy(dec);
+    for (auto &it : voicepeers) {
+        opus_decoder_destroy(it.second.dec);
+    }
 }
 
 void VoiceClient::stop() {

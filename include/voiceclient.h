@@ -27,19 +27,27 @@ using udp = asio::ip::udp;
 #define MAX_PACKET_SIZE (3*1276)
 
 struct SoundIo;
+void setup_opus(OpusEncoder **enc, OpusDecoder **dec);
+
+struct VoicePeer {
+    OpusDecoder *dec;
+    std::mutex outm;
+    std::deque<int16_t> outbuf;
+    VoicePeer();
+};
 
 class VoiceClient {
 public:
     udp::socket sock;
     udp::endpoint endp;
     OpusEncoder *enc;
-    OpusDecoder *dec;
-    
+
     std::deque<int16_t> inbuf;
     std::deque<int16_t> outbuf;
     std::mutex inm;
     std::mutex outm;
     std::condition_variable condvar;
+    std::unordered_map<uint64_t, VoicePeer> voicepeers;
     struct SoundIo *soundio;
     unsigned char netbuf[MAX_PACKET_SIZE + 1];
     bool stopped = false;
