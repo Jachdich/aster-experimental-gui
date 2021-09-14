@@ -83,10 +83,21 @@ MainWindow::MainWindow() {
             chan_split,
             online_split
         );
-        connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
+        //connect(server, &ServerModel::initialised, this, &MainWindow::onServerInitialised);
         connect(server, &ServerModel::splitChanged, this, &MainWindow::splitChanged);
+
+        servers.push_back(server);
+        ServerButton *button = new ServerButton(servers[servers.size() - 1], this, false);
+        serverButtonLayout->insertWidget(servers.size() - 1, button);
+        serverContentLayout->insertWidget(servers.size() - 1, server);
+        serverButtons.push_back(button);
+        connect(button, &ServerButton::remove, this, &MainWindow::deleteServerButton);
+        connect(button, &ServerButton::serverClicked, this, &MainWindow::handleServerClick);
+        connect(server->net, &ClientNetwork::onlineChanged, button, &ServerButton::onlineChanged);
+        
         std::error_code error = server->connect(meta);
         if (error) {
+            std::cout << "Error for some reason: " << error.message() << "\n";
             //HEHE IGNORE IT LOL
         }
     }
@@ -268,18 +279,7 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
 }
 
 void MainWindow::onServerInitialised(ServerModel* server, bool active) {
-    servers.push_back(server);
-
-    ServerButton *button = new ServerButton(servers[servers.size() - 1], this, active);
-    serverButtonLayout->insertWidget(servers.size() - 1, button);
-    serverContentLayout->insertWidget(servers.size() - 1, server);
-    serverButtons.push_back(button);
-    connect(button, &ServerButton::remove, this, &MainWindow::deleteServerButton);
-    connect(button, &ServerButton::serverClicked, this, &MainWindow::handleServerClick);
-
-    if (active) {
-        server->sendRequest("/history 200");
-    }
+    
 }
 
 void MainWindow::openNewServerView() {

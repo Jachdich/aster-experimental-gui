@@ -38,6 +38,7 @@ public slots:
     void onContextMenu(const QPoint&);
     void removeServer();
     void deleteAccount();
+    void onlineChanged(bool online);
 };
 
 #endif

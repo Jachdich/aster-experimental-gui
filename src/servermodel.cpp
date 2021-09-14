@@ -18,6 +18,7 @@
 #include <Qt>
 #include <vector>
 #include <string>
+#include <chrono>
 #include <iostream>
 #include <QtMultimedia/QMediaPlayer>
 #include <QSplitter> 
@@ -57,7 +58,6 @@ ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint
     
     QObject::connect(net, &ClientNetwork::msgRecvd, this, &ServerModel::handleNetwork);
     QObject::connect(channels, &QListWidget::currentItemChanged, this, &ServerModel::changeChannel);
-
     QObject::connect(splitter, &QSplitter::splitterMoved, this, &ServerModel::splitterMoved);
 }
 
@@ -240,6 +240,7 @@ void ServerModel::handleNetwork(QString data) {
         }
     } else if (!msg["content"].is_null()) {
         std::string content = msg["content"].get<std::string>();
+
         messages->addMessage(new Message(this,
             peers[msg["author_uuid"].get<uint64_t>()], //https://xkcd.com/xxxx/info.0.json
 

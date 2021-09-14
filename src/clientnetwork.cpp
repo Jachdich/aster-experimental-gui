@@ -16,7 +16,8 @@ void ClientNetwork::handleNetworkPacket(std::string data) {
 }
 
 std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
-    //std::cout << address << ":" << port << "\n";
+    this->port = port;
+    addr = address;
     asio::error_code ec;
 
     asio::ip::tcp::resolver resolver(ctx);
@@ -29,6 +30,7 @@ std::error_code ClientNetwork::connect(std::string address, uint16_t port) {
 
     readUntil();
     asioThread = std::thread([&]() {ctx.run();});
+    if (!successfullyConnected) { emit onlineChanged(true); }
     successfullyConnected = true;
     return ec;
 }
@@ -48,13 +50,83 @@ void ClientNetwork::handler(std::error_code ec, size_t bytes_transferred) {
         handleNetworkPacket(data);
 
     } else {
-        std::cerr << "read ERROR: " <<  ec.message() << "\n";
+        //if (ec.
+        std::cerr << "rERROR: " <<  ec.message() << "\n";
+        //readUntil();
+        if (successfullyConnected) { emit onlineChanged(false); }
+        successfullyConnected = false;
+        //cleanUp();
+        asio::error_code ec;
+        socket.shutdown(ec);
+        while (1) {
+            asio::error_code ec;
+        
+            asio::ip::tcp::resolver resolver(ctx);
+            auto endpoint = resolver.resolve(addr, std::to_string(port), ec);
+            if (ec) continue;
+            asio::connect(socket.next_layer(), endpoint, ec);
+            if (ec) continue;
+            socket.handshake(asio::ssl::stream_base::client, ec);
+            if (ec) continue;
+            break;
+        }
         readUntil();
     }
 }
+/*
+void ClientNetwork::cleanUp() {
+    socket.lowest_layer().cancel();
+    ctx.stop();
+    asio::error_code ec;
+    socket.shutdown(ec);
+    if (ec) {
+        //actually just ignore it
+    }
+    ctx.restart();
+}*/
 
 void ClientNetwork::readUntil() {
     asio::async_read_until(socket, buf, '\n', [this] (std::error_code ec, std::size_t bytes_transferred) {
         handler(ec, bytes_transferred);
     });
 }
+/*
+std::error_code ClientNetwork::try_reconnect() {
+    if (successfullyConnected) {
+    	cleanUp();
+    	asioThread.join();
+    }
+    if (successfullyConnected) { emit onlineChanged(false); }
+    successfullyConnected = false;
+    std::error_code ec = connect(addr, port);
+    return ec;
+}*/
+/*
+void ClientNetwork::checkAlive() {
+    while (true) {
+        bool oldOnline = isOnline;
+        std::cout << "checking online\n";
+        if (net != nullptr) {
+            if (net->successfullyConnected) {
+                std::error_code ec = net->sendRequest("/ping");
+                if (ec) {
+                    isOnline = false;
+                    std::cout << "not online: " << ec.message() << "\n";
+                    net->try_reconnect();
+                } else {
+                    std::cout << "yes online\n";
+                    isOnline = true; //TODO listen for pong
+                }
+            } else {
+                net->try_reconnect();
+                isOnline = false;
+            }
+        } else {
+            isOnline = false;
+        }
+        if (oldOnline != isOnline) {
+            emit onlineChanged(isOnline);
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}*/

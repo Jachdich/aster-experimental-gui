@@ -32,7 +32,6 @@ Q_OBJECT
 
     std::vector<QLabel*> channelWidgets;
     std::string currentChannel = "general";
-    std::thread aliveThread;
 
 public:
     QSplitter *splitter;
@@ -45,7 +44,7 @@ public:
     QPixmap pfp;
     std::string pfp_b64 = "";
     std::unordered_map<uint64_t, Metadata> peers = {};
-    ClientNetwork* net;
+    ClientNetwork* net = nullptr;
     bool isInitialised = false;
     bool isInBackground = true;
     

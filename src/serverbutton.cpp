@@ -50,12 +50,14 @@ void ServerButton::setOnline() {
     setToolTip(QString::fromStdString(server->name));
     setIconSize(server->pfp.rect().size());
     setCheckable(true);
+    active = true;
 }
 
 void ServerButton::setOffline() {
     setIcon(QIcon(QString::fromStdString(respath + pathsep + "server_offline.png")));
     setToolTip("This server is offline");
     setIconSize(server->pfp.rect().size());
+    active = false;
 }
 
 void ServerButton::deleteAccount() {
@@ -73,7 +75,12 @@ void ServerButton::onContextMenu(const QPoint &point) {
 }
 
 void ServerButton::handleClick(bool n) {
-    if (!active) return;
+    if (!active) {
+        blockSignals(true);
+        setChecked(false);
+        blockSignals(false);
+        return;
+    }
     if (n) {
        emit serverClicked(this);
     } else {
@@ -84,3 +91,7 @@ void ServerButton::handleClick(bool n) {
     //TODO make this a signal/slot?
 }
 
+void ServerButton::onlineChanged(bool online) {
+    if (online) { setOnline(); }
+    else { setOffline(); }
+}
