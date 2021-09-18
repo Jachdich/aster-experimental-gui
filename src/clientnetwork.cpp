@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include "network.h"
+#include <thread>
 
 using asio::ip::tcp;
 
@@ -51,25 +52,30 @@ void ClientNetwork::handler(std::error_code ec, size_t bytes_transferred) {
 
     } else {
         //if (ec.
-        std::cerr << "rERROR: " <<  ec.message() << "\n";
+        std::cerr << "Error whilst reading: " <<  ec.message() << "\n";
         //readUntil();
         if (successfullyConnected) { emit onlineChanged(false); }
-        successfullyConnected = false;
+        successfullyConnected = false;\
         //cleanUp();
         asio::error_code ec;
         socket.shutdown(ec);
+        //ssl_ctx = asio::ssl::context(asio::ssl::context::tlsv12_client);
+        //socket = asio::ssl::stream<asio::ip::tcp::socket>(ctx, ssl_ctx);
         while (1) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             asio::error_code ec;
-        
+            std::cerr << "Retrying connection to " << addr << ":" << port << "\n";
             asio::ip::tcp::resolver resolver(ctx);
             auto endpoint = resolver.resolve(addr, std::to_string(port), ec);
-            if (ec) continue;
+            if (ec) { std::cerr << "Error whilst retrying: " << ec.message() << "\n"; continue; }
             asio::connect(socket.next_layer(), endpoint, ec);
-            if (ec) continue;
+            if (ec) { std::cerr << "Error whilst retrying: " << ec.message() << "\n"; continue; }
             socket.handshake(asio::ssl::stream_base::client, ec);
-            if (ec) continue;
+            if (ec) { std::cerr << "Error whilst retrying: " << ec.message() << "\n"; continue; }
             break;
         }
+        successfullyConnected = true;
+        emit onlineChanged(true);
         readUntil();
     }
 }

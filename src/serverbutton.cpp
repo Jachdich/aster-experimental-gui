@@ -11,6 +11,7 @@
 #include <QAction>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QPainter>
 #include <vector>
 
 ServerButton::ServerButton(ServerModel* server, MainWindow* parent, bool active) {
@@ -54,9 +55,17 @@ void ServerButton::setOnline() {
 }
 
 void ServerButton::setOffline() {
-    setIcon(QIcon(QString::fromStdString(respath + pathsep + "server_offline.png")));
-    setToolTip("This server is offline");
+    //setIcon(QIcon(QString::fromStdString(respath + pathsep + "server_offline.png")));
+    //setToolTip("This server is offline");
+    setToolTip(QString::fromStdString(server->name + "(" + server->ip + ":" + std::to_string(server->port) + " offline)"));
     setIconSize(server->pfp.rect().size());
+    //setCheckable(false);
+
+    QPixmap icon(server->pfp);
+    QPixmap overlay(QString::fromStdString(respath + pathsep + "server_offline.png"));
+    QPainter painter(&icon);
+    painter.drawPixmap(0, 0, overlay);
+    setIcon(icon);
     active = false;
 }
 
