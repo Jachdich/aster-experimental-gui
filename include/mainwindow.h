@@ -19,6 +19,7 @@ class Message;
 class SettingsMenu;
 
 class MainWindow : public QWidget {
+private:
     NewServerView* nsv;
     SettingsMenu* settings;
     QLineEdit* input;
@@ -32,6 +33,7 @@ class MainWindow : public QWidget {
     size_t selectedServer = 0;
     bool safeToSave = true;
     bool settingsed = false;
+    std::string default_server_pfp;
 
     int chan_split, online_split;
 

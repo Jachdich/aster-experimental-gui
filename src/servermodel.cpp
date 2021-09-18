@@ -63,8 +63,6 @@ ServerModel::ServerModel(QWidget *parent, std::string name, std::string ip, uint
 
 ServerModel::~ServerModel() {
 	delete net;
-	delete layout;
-	delete messages;
 }
 
 void ServerModel::splitterMoved(int, int) {
@@ -131,6 +129,8 @@ std::error_code ServerModel::initialise(uint64_t uuid, ClientMeta meta) {
 std::error_code ServerModel::connect(ClientMeta meta) {
     std::error_code ret = net->connect(ip, port);
     if (!ret) {
+        net->sendRequest("/get_icon");
+        net->sendRequest("/get_name");
         net->sendRequest("/login " + std::to_string(uuid));
         net->sendRequest("/get_all_metadata");
         net->sendRequest("/get_channels");

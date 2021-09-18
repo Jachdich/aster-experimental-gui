@@ -93,10 +93,6 @@ MessageContainer::MessageContainer(QWidget* parent, ServerModel *server) : QWidg
 
 MessageContainer::~MessageContainer() {
 	clear();
-	delete widget;
-	delete layout;
-	delete msglayout;
-	delete vc;
 }
 
 void MessageContainer::clear() {
