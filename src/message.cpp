@@ -10,7 +10,8 @@
 #include <QTextDocument>
 #include <QEvent>
 #include <QResizeEvent>
-
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "httplib.h"
 void wrapLabelByTextSize(QLabel *label, int widthInPixels, QString orig_content) {
     if (widthInPixels < 100) {
         widthInPixels = 100;
@@ -39,7 +40,21 @@ void wrapLabelByTextSize(QLabel *label, int widthInPixels, QString orig_content)
 }
 Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *pfpPixmap, int64_t utc) : QWidget(parent), meta(nmeta) {
     if (cont.left(4) == QString("xkcd")) {
-        cont = "testing";
+        QStringList sl = cont.split(" ");
+        if (sl.size() == 2) {
+            QString number = sl[1];
+            bool convertOk = false;
+            int xkcd = number.toUInt(&convertOk);
+
+            if (convertOk) {
+                QString url = "https://xkcd.com";
+                httplib::Client cli(url.toStdString());
+                auto res = cli.Get(("/" + number + "/info.0.json").toStdString().c_str());
+                if (res->status == 200) {
+                    cont = QString::fromStdString(res->body);
+                }
+            }
+        }
     }
     layout = new QGridLayout(this);
     uname = new QLabel(" " + QString::fromStdString(meta.uname) + ": ", this);
