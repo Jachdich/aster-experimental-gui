@@ -30,6 +30,11 @@ protected:
     void enterEvent(QEvent *) override;
     void leaveEvent(QEvent *) override;
     void paintEvent(QPaintEvent*) override;
+
+signals:
+    void imageChanged(QPixmap pix);
+protected slots:
+    void changeImage(QPixmap pix);
 //    bool eventFilter(QObject *object, QEvent *event) override;
 public:
     QGridLayout *layout;
