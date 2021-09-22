@@ -74,6 +74,41 @@ QPixmap loadXKCDImage(QString cont) {
     return img;
 }
 
+QPixmap loadURLImage(QString cont) {
+    QPixmap img;
+    QStringList sl = cont.split(" ");
+    if (sl.size() == 2) {
+        QString number = sl[1];
+        bool convertOk = false;
+        int xkcd = number.toUInt(&convertOk);
+
+        if (convertOk) {
+            QString url = "https://xkcd.com";
+            httplib::Client cli(url.toStdString());
+            auto res = cli.Get(("/" + number + "/info.0.json").toStdString().c_str());
+            if (res->status == 200) {
+                json msg = json::parse(res->body);
+                std::string img_url = msg["img"].get<std::string>();
+                httplib::Client icli("https://imgs.xkcd.com");
+                auto ires = icli.Get(img_url.substr(21).c_str());
+                if (ires->status != 200) {
+                    std::cerr << "Got status " << ires->status << " other than 200\n";
+                } else {
+                    QByteArray data = QByteArray((const char*)ires->body.data(), ires->body.size());
+                    img.loadFromData(data);
+                }
+            } else {
+                std::cerr << "not 200 status: " << res->status << "\n";
+            }
+        } else {
+            std::cerr << "not a number\n";
+        }
+    } else {
+        std::cerr << "Not length of 2\n";
+    }
+    return img;
+}
+
 Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *pfpPixmap, int64_t utc) : QWidget(parent), meta(nmeta) {
     layout = new QGridLayout(this);
     uname = new QLabel(" " + QString::fromStdString(meta.uname) + ": ", this);
