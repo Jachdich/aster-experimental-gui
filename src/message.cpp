@@ -129,6 +129,7 @@ Message::Message(QWidget *parent, const Metadata &nmeta, QString cont, QPixmap *
 
 void Message::changeImage(QPixmap pix) {
     content->setPixmap(pix);
+    content->setFixedHeight(pix.height());
     content->updateGeometry();
     updateGeometry();
 }
