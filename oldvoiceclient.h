@@ -15,7 +15,7 @@
 #include <deque>
 #include <thread>
 #include <chrono>
-#include <portaudio.h>
+
 
 using udp = asio::ip::udp;
 #define FRAME_SIZE 960
@@ -48,7 +48,7 @@ public:
     std::mutex outm;
     std::condition_variable condvar;
     std::unordered_map<uint64_t, VoicePeer> voicepeers;
-    PaStream *stream;
+    struct SoundIo *soundio;
     unsigned char netbuf[MAX_PACKET_SIZE + 1];
     bool stopped = false;
     bool send_ident = true;
@@ -57,7 +57,7 @@ public:
     VoiceClient(asio::io_context &ctx);
     void start_recv();
     void handle_recv(const asio::error_code &ec, size_t nBytes);
-    PaError audio_run();
+    void soundio_run();
     void stop();
     void run(uint64_t uuid);
 };

@@ -1,5 +1,4 @@
-
-#include "voiceclient.h"
+#include "../include/voiceclient.h"
 
 enum {
     REQ_ACK,
@@ -8,12 +7,12 @@ enum {
     REQ_END
 };
 
-#define FORMAT SoundIoFormatS16LE
+#define FORMAT paInt16
 
 void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
     int err;
     if (enc != NULL) {
-        *enc = opus_encoder_create(48000, 1, APPLICATION, &err);
+        *enc = opus_encoder_create(SAMPLE_RATE, 1, APPLICATION, &err);
         if (err < 0) {
             fprintf(stderr, "failed to create encoder: %s\n", opus_strerror(err));
             exit(1);
@@ -35,183 +34,66 @@ void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
     }
 }
 
-void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
-    printf("Latency (in): %lf\n", instream->software_latency);
-
-    struct SoundIoChannelArea *areas;
-    int err;
-    VoiceClient *client = (VoiceClient*)instream->userdata;
-    bool a = false;
-    int frames_left = frame_count_max;
-    for (;;) {
-        int frame_count = frames_left;
-        if ((err = soundio_instream_begin_read(instream, &areas, &frame_count))) {
-            fprintf(stderr, "begin read error: %s", soundio_strerror(err));
-            exit(1);
-        }
-        if (!frame_count)
-            break;
-        std::unique_lock<std::mutex> lock(client->inm);
-        if (!areas) {
-            // Due to an overflow there is a hole. Fill the ring buffer with
-            // silence for the size of the hole.
-            //memset(buffer + buf_end, 0, frame_count * instream->bytes_per_frame);
-            //buf_end += frame_count;
-            fprintf(stderr, "Dropped %d frames due to internal overflow\n", frame_count);
-        } else {
-            for (int frame = 0; frame < frame_count; frame += 1) {
-                opus_int16 val;
-                for (int ch = 0; ch < instream->layout.channel_count; ch += 1) {
-                    val = *(int16_t*)areas[ch].ptr;
-                    areas[ch].ptr += areas[ch].step;
-                }
-                client->inbuf.push_back(val);
-                if (client->inbuf.size() > FRAME_SIZE) {
-                    client->condvar.notify_all();
-                }
-            }
-        }
-        lock.unlock();
-        if ((err = soundio_instream_end_read(instream))) {
-            fprintf(stderr, "end read error: %s", soundio_strerror(err));
-            exit(0);
-        }
-        frames_left -= frame_count;
-        if (frames_left <= 0)
-            break;
-    }
-}
-
-void write_callback(struct SoundIoOutStream *outstream,
-                    int frame_count_min, int frame_count_max) {
-    VoiceClient *client = (VoiceClient*)outstream->userdata;
-     printf("Latency (out): %lf\n", outstream->software_latency);
-   
-    struct SoundIoChannelArea *areas;
-    //int frames_left = min(frame_count_max, buffer.size());
-    int frames_left = frame_count_max;
-    //if (frame_count_min > frames_left || frames_left == 0) { 
-    //    fprintf(stderr, "Buffer underflow #2 %d\n", buffer.size());
-    //}
-    for (auto &peer: client->voicepeers) {
-        printf("%d outbuf: %d\n", peer.first, peer.second.outbuf.size());
-    }
-    int err;
-
-    while (frames_left > 0) {
-        int frame_count = frames_left;
-        if ((err = soundio_outstream_begin_write(outstream, &areas, &frame_count))) {
-            fprintf(stderr, "%s\n", soundio_strerror(err));
-            exit(1);
+static int pa_callback(const void *input, void *output,
+                       unsigned long framesPerBuffer,
+                       const PaStreamCallbackTimeInfo *timeInfo,
+                       PaStreamCallbackFlags statusFlags,
+                       void *userData) {
+    VoiceClient *client = (VoiceClient*)userData;
+    int16_t *out = (int16_t*)output;
+    int16_t *in = (int16_t*)input;
+    (void)timeInfo;
+    (void)statusFlags;
+    std::unique_lock<std::mutex> lock(client->inm);
+    for (unsigned int i = 0; i < framesPerBuffer; i++) {
+        //*out++ = *in++;
+        client->inbuf.push_back(*in++);
+        if (client->inbuf.size() > FRAME_SIZE) {
+            client->condvar.notify_all();
         }
 
-        if (!frame_count) break;
-        for (int frame = 0; frame < frame_count; frame += 1) {
-            int16_t val = 0;
-            //TODO mutex on voicepeers?
-            for (auto &peer: client->voicepeers) {
-                //if (client->outbuf.size() <= FRAME_SIZE && !done) {
-                //    printf("Buffer underflow!\n");
-                //    done = true;
-                //}
-                std::lock_guard<std::mutex> lock(peer.second.outm);
-                if (peer.second.outbuf.size() > FRAME_SIZE) {
-                    val = peer.second.outbuf.back();
-                    peer.second.outbuf.pop_back();
-                }
-                if (peer.second.outbuf.size() > FRAME_SIZE * 8) {
-                    printf("Buffer overflow!\n");
-                    //while (peer.second.outbuf.size() > FRAME_SIZE) {
-                        peer.second.outbuf.pop_back();
-                    //}
-                }
-            }
-            //if (!done) {
-            //    printf("%04x\n", (uint16_t)val);
+        int16_t val = 0;
+        //TODO mutex on voicepeers?
+        for (auto &peer: client->voicepeers) {
+            //if (client->outbuf.size() <= FRAME_SIZE && !done) {
+            //    printf("Buffer underflow!\n");
             //    done = true;
             //}
-            for (int channel = 0; channel < outstream->layout.channel_count; channel += 1) {
-                int16_t *ptr = (int16_t*)(areas[channel].ptr + areas[channel].step * frame);
-                *ptr = val;
+            std::lock_guard<std::mutex> lock(peer.second.outm);
+            if (peer.second.outbuf.size() > FRAME_SIZE) {
+                val = peer.second.outbuf.back();
+                peer.second.outbuf.pop_back();
             }
-            
+            if (peer.second.outbuf.size() > FRAME_SIZE * 8) {
+                printf("Buffer overflow!\n");
+                //while (peer.second.outbuf.size() > FRAME_SIZE) {
+                    peer.second.outbuf.pop_back();
+                //}
+            }
         }
-
-        if ((err = soundio_outstream_end_write(outstream))) {
-            fprintf(stderr, "%s\n", soundio_strerror(err));
-            exit(1);
-        }
-        //printf("Consumed %d frames\n", frame_count);
-        frames_left -= frame_count;
+        *out++ = val;
     }
+    lock.unlock();
+
+    return 0;
 }
 
-void VoiceClient::soundio_run() {
-    soundio = soundio_create();
-    
-    int err;
-    if ((err = soundio_connect(soundio))) {
-        fprintf(stderr, "failed to initialise soundio: %s\n", soundio_strerror(err));
-        exit(1);
-    }
-    soundio_flush_events(soundio);
+#define ERRHANDLE(err) if (err != paNoError) return err;
 
-    int default_in_device_index = soundio_default_input_device_index(soundio);
-    struct SoundIoDevice *indevice = soundio_get_input_device(soundio, default_in_device_index);
-    struct SoundIoInStream *instream = soundio_instream_create(indevice);
+PaError VoiceClient::audio_run() {
+    PaError err;
 
-    instream->format = FORMAT;
-    instream->read_callback = read_callback;
-    instream->userdata = this;
-    instream->software_latency = 0.2;
-    
-    if ((err = soundio_instream_open(instream))) {
-        fprintf(stderr, "unable to open device: %s", soundio_strerror(err));
-        exit(1);
+    err = Pa_Initialize(); ERRHANDLE(err);  
+    err = Pa_OpenDefaultStream(&stream, 1, 1, FORMAT, SAMPLE_RATE, 256, pa_callback, this); ERRHANDLE(err);
+    err = Pa_StartStream(stream); ERRHANDLE(err);
+    while (!stopped) {
+        Pa_Sleep(500);
     }
-    
-    if (instream->layout_error)
-        fprintf(stderr, "unable to set channel layout: %s\n", soundio_strerror(instream->layout_error));
-    
-    if ((err = soundio_instream_start(instream))) {
-        fprintf(stderr, "unable to start device: %s\n", soundio_strerror(err));
-        exit(1);
-    }
-
-    int default_out_device_index = soundio_default_output_device_index(soundio);
-    struct SoundIoDevice *outdevice = soundio_get_output_device(soundio, default_out_device_index);
-    struct SoundIoOutStream *outstream = soundio_outstream_create(outdevice);
-
-    outstream->format = FORMAT;
-    outstream->write_callback = write_callback;
-    outstream->userdata = this;
-    outstream->software_latency = 0.2;
-    fprintf(stderr, "Input device: %s\n", indevice->name);
-    fprintf(stderr, "Output device: %s\n", outdevice->name);
-    printf("out in format: %d %d\n", soundio_device_supports_format(outdevice, FORMAT), soundio_device_supports_format(indevice, FORMAT));
-    if ((err = soundio_outstream_open(outstream))) {
-        fprintf(stderr, "unable to open device: %s", soundio_strerror(err));
-        exit(1);
-    }
-    
-    if (outstream->layout_error)
-        fprintf(stderr, "unable to set channel layout: %s\n", soundio_strerror(outstream->layout_error));
-    
-    if ((err = soundio_outstream_start(outstream))) {
-        fprintf(stderr, "unable to start device: %s\n", soundio_strerror(err));
-        exit(1);
-    }
-    
-    while (!stopped)
-        soundio_wait_events(soundio);
-    
-    soundio_instream_destroy(instream);
-    soundio_outstream_destroy(outstream);
-    soundio_device_unref(indevice);
-    soundio_device_unref(outdevice);
-    soundio_destroy(soundio);
+    err = Pa_StopStream(stream); ERRHANDLE(err);
+    err = Pa_CloseStream(stream); ERRHANDLE(err);
+    Pa_Terminate();
+    return paNoError;
 }
-
 void VoiceClient::start_recv() {
     sock.async_receive_from(
         asio::buffer(netbuf, MAX_FRAME_SIZE), endp,
@@ -275,13 +157,14 @@ VoiceClient::VoiceClient(asio::io_context &ctx) : sock(ctx) {
     udp::resolver resolver(ctx);
     asio::error_code ec;
     //udp::resolver::query query(udp::v4(), "127.0.0.1", "2346"); 
-    auto endpoints = resolver.resolve("192.168.1.20", "2346", ec); // *resolver.resolve(query).begin();
+    auto endpoints = resolver.resolve("127.0.0.1", "2346", ec); // *resolver.resolve(query).begin();
     endp = *endpoints.begin();
     if (ec) {
-        printf("Error: Couldn't connec to voice server: %s\n", ec.message());
+        printf("Error: Couldn't connec to voice server: %s\n", ec.message().c_str());
     }
     sock.open(udp::v4());
 }
+
 
 void VoiceClient::run(uint64_t uuid) {
     opus_int16 in[FRAME_SIZE];
@@ -337,6 +220,5 @@ void VoiceClient::run(uint64_t uuid) {
 void VoiceClient::stop() {
     stopped = true;
     send_end = true;
-    soundio_wakeup(soundio);
     condvar.notify_all();
 }

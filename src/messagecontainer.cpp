@@ -50,7 +50,15 @@ void VcContainer::joinVoice() {
 
     clientthread = std::thread([this]() { vc->run(server->uuid); });
     netthread    = std::thread([this]() { ctx.run(); });
-    soundthread  = std::thread([this]() { vc->soundio_run(); });
+    soundthread  = std::thread([this]() {
+        PaError err = vc->audio_run();
+        if (err != paNoError) {
+            Pa_Terminate();
+            fprintf(stderr, "An error occurred while using the portaudio stream\n");
+            fprintf(stderr, "Error number: %d\n", err);
+            fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
+        }
+    });
 }
 
 void VcContainer::leaveVoice() {
