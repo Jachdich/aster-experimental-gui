@@ -34,23 +34,38 @@ void setup_opus(OpusEncoder **enc, OpusDecoder **dec) {
     }
 }
 
-static int pa_callback(const void *input, void *output,
+static int pa_read_callback(const void *input, void *output,
+                       unsigned long framesPerBuffer,
+                       const PaStreamCallbackTimeInfo *timeInfo,
+                       PaStreamCallbackFlags statusFlags,
+                       void *userData) {
+    VoiceClient *client = (VoiceClient*)userData;
+    int16_t *in = (int16_t*)input;
+    (void)timeInfo;
+    (void)statusFlags;
+    std::unique_lock<std::mutex> lock(client->inm);
+    for (unsigned int i = 0; i < framesPerBuffer; i++) {
+        client->inbuf.push_back(*in++);
+        if (client->inbuf.size() > FRAME_SIZE) {
+            client->condvar.notify_all();
+        }
+    }
+    lock.unlock();
+
+    return 0;
+}
+
+static int pa_write_callback(const void *input, void *output,
                        unsigned long framesPerBuffer,
                        const PaStreamCallbackTimeInfo *timeInfo,
                        PaStreamCallbackFlags statusFlags,
                        void *userData) {
     VoiceClient *client = (VoiceClient*)userData;
     int16_t *out = (int16_t*)output;
-    int16_t *in = (int16_t*)input;
     (void)timeInfo;
     (void)statusFlags;
     std::unique_lock<std::mutex> lock(client->inm);
     for (unsigned int i = 0; i < framesPerBuffer; i++) {
-        //*out++ = *in++;
-        client->inbuf.push_back(*in++);
-        if (client->inbuf.size() > FRAME_SIZE) {
-            client->condvar.notify_all();
-        }
 
         int16_t val = 0;
         //TODO mutex on voicepeers?
@@ -80,18 +95,24 @@ static int pa_callback(const void *input, void *output,
 
 #define ERRHANDLE(err) if (err != paNoError) return err;
 
-PaError VoiceClient::audio_run() {
+PaError VoiceClient::audio_run(PaDeviceIndex in, PaDeviceIndex out) {
     PaError err;
-
-    err = Pa_Initialize(); ERRHANDLE(err);  
-    err = Pa_OpenDefaultStream(&stream, 1, 1, FORMAT, SAMPLE_RATE, 256, pa_callback, this); ERRHANDLE(err);
-    err = Pa_StartStream(stream); ERRHANDLE(err);
+    const PaDeviceInfo* ininfo = Pa_GetDeviceInfo(in);
+    const PaDeviceInfo* outinfo = Pa_GetDeviceInfo(out);
+    PaStreamParameters inparams = {in, 1, FORMAT, ininfo->defaultLowInputLatency, NULL};
+    PaStreamParameters outparams = {out, 1, FORMAT, outinfo->defaultLowOutputLatency, NULL};
+    
+    err = Pa_OpenStream(&instream,  &inparams,  NULL, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_read_callback, this); ERRHANDLE(err);
+    err = Pa_OpenStream(&outstream, NULL, &outparams, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_write_callback, this); ERRHANDLE(err);
+    err = Pa_StartStream(instream);  ERRHANDLE(err);
+    err = Pa_StartStream(outstream); ERRHANDLE(err);
     while (!stopped) {
         Pa_Sleep(500);
     }
-    err = Pa_StopStream(stream); ERRHANDLE(err);
-    err = Pa_CloseStream(stream); ERRHANDLE(err);
-    Pa_Terminate();
+    err = Pa_StopStream(instream);   ERRHANDLE(err);
+    err = Pa_StopStream(outstream);  ERRHANDLE(err);
+    err = Pa_CloseStream(instream);  ERRHANDLE(err);
+    err = Pa_CloseStream(outstream); ERRHANDLE(err);
     return paNoError;
 }
 void VoiceClient::start_recv() {

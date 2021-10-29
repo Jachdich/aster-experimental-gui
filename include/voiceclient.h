@@ -7,7 +7,7 @@
 #include <string.h>
 #include <opus/opus.h>
 #include <stdio.h>
-#include <soundio/soundio.h>
+#include <unordered_map>
 #include <math.h>
 #include <asio.hpp>
 #include <condition_variable>
@@ -48,7 +48,8 @@ public:
     std::mutex outm;
     std::condition_variable condvar;
     std::unordered_map<uint64_t, VoicePeer> voicepeers;
-    PaStream *stream;
+    PaStream *instream;
+    PaStream *outstream;
     unsigned char netbuf[MAX_PACKET_SIZE + 1];
     bool stopped = false;
     bool send_ident = true;
@@ -57,7 +58,7 @@ public:
     VoiceClient(asio::io_context &ctx);
     void start_recv();
     void handle_recv(const asio::error_code &ec, size_t nBytes);
-    PaError audio_run();
+    PaError audio_run(PaDeviceIndex in, PaDeviceIndex out);
     void stop();
     void run(uint64_t uuid);
 };

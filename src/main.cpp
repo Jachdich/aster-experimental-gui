@@ -1,3 +1,5 @@
+//TODO save audiso preferences-2
+
 #include <QApplication>
 #include <QStyleFactory>
 #include <QMessageBox>
@@ -12,6 +14,7 @@
 #include "serverbutton.h"
 #include "mainwindow.h"
 #include "base64.h"
+#include "portaudio.h"
 #include <filesystem>
 
 #include <regex>
@@ -20,6 +23,8 @@ namespace fs = std::filesystem;
 
 std::string prefpath;
 std::string respath = "resources";
+PaDeviceIndex sel_in_device  = 0;
+PaDeviceIndex sel_out_device = 0;
 
 #ifdef __linux__
 #include <unistd.h>
@@ -140,11 +145,21 @@ std::string formatStyleSheets(std::string ssheet) {
     return ssheet;
 }
 
+void setup_audio() {
+    PaError err = Pa_Initialize();
+    if (err) {
+        char buffer[2048];
+        sprintf(buffer, "Aster couldn't initialise the audio subsystem, for some reason. this should never happen. traceback:\n%s", Pa_GetErrorText(err));
+        fatalmsg(std::string(buffer));
+    }
+}
+
 int main(int argc, char *argv[]) {
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     QApplication app(argc, argv);
 
     setup_prefpath();
+    setup_audio();
     if (!std::filesystem::is_directory(std::filesystem::path(prefpath))) {
         if (std::filesystem::exists(std::filesystem::path(prefpath))) {
             fatalmsg("there's a file called aster at path \"" + prefpath + "\" and I dont know what it is. Please deal with it.");
@@ -172,5 +187,6 @@ int main(int argc, char *argv[]) {
 
     int32_t ret = app.exec();
     window.save();
+    Pa_Terminate();
     exit(ret);
 }
