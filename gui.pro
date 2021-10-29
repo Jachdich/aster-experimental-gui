@@ -5,9 +5,10 @@
 TEMPLATE = app
 TARGET = gui
 INCLUDEPATH += include
-win32:INCLUDEPATH += openssl/include
-LIBS += -lssl -lcrypto -lrt -lm -lasound -ljack -pthread -lopus -lportaudio
-win32:LIBS += -lws2_32 openssl/lib/libcrypto.lib openssl/lib/libssl.lib
+win32:INCLUDEPATH += ../openssl/include ../asio/include ../opus/include
+LIBS += -lssl -lcrypto -lrt -lm -lopus -lportaudio
+unix:LIBS += -lasound -ljack -pthread
+win32:LIBS += -lws2_32 ../openssl/lib/libcrypto.lib ../openssl/lib/libssl.lib
 QT += widgets core multimedia
 
 # The following define makes your compiler warn you if you use any
