@@ -27,3 +27,5 @@ HEADERS += include/voiceclient.h include/main.h include/network.h include/server
 SOURCES += src/voiceclient.cpp src/base64.cpp src/main.cpp src/message.cpp src/metadata.cpp src/serverbutton.cpp src/clientnetwork.cpp src/mainwindow.cpp src/messagecontainer.cpp src/newserverview.cpp src/servermodel.cpp src/settingsmenu.cpp src/smallprofile.cpp src/onlineview.cpp
 
 QMAKE_CXXFLAGS += -std=c++17 -g
+OBJECTS_DIR = obj
+MOC_DIR = moc

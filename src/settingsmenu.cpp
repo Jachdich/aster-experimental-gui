@@ -1,5 +1,6 @@
-#include "settingsmenu.h"
-#include "metadata.h"
+#include "../include/settingsmenu.h"
+#include "../include/metadata.h"
+#include "../include/main.h"
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QLabel>
@@ -14,42 +15,98 @@
 #include <QPainter>
 #include <QIcon>
 #include <QMessageBox>
+#include <QComboBox>
+#include <QTabWidget>
 
-#include "base64.h"
+#include "../include/base64.h"
+#include "../include/portaudio.h"
 #include <string>
 #include <vector>
 
-SettingsMenu::SettingsMenu(ClientMeta* meta) {
+SettingsMenu::SettingsMenu(ClientMeta *meta) {
     this->meta = meta;
-    layout = new QGridLayout(this);
+    account = new QWidget(this);
+    voice = new QWidget(this);
     
-    lUname = new QLabel("Username", this);
-    lPfp = new QLabel("Profile picture", this);
-    lPasswd = new QLabel("Password", this);
+    acct_layout = new QGridLayout(account);
+    
+    lUname = new QLabel("Username", account);
+    lPfp = new QLabel("Profile picture", account);
+    lPasswd = new QLabel("Password", account);
 
-    uname = new QLineEdit(this);
-    passwd = new QLineEdit(this);
-    pfp = new QPushButton(this);
+    uname = new QLineEdit(account);
+    passwd = new QLineEdit(account);
+    pfp = new QPushButton(account);
 
-    save = new QPushButton("Save", this);
-    cancel = new QPushButton("Cancel", this);
+    save = new QPushButton("Save", account);
+    cancel = new QPushButton("Cancel", account);
 
+    voice_layout = new QGridLayout(account);
+
+    inlabel = new QLabel("Input device", voice);
+    outlabel = new QLabel("Output device", voice);
+    inbox = new QComboBox(voice);
+    outbox = new QComboBox(voice);
+
+    initialiseAudioOptions();
+    
     setDefaults();
 
-    layout->addWidget(lUname, 0, 0);
-    layout->addWidget(lPfp, 1, 0);
-    layout->addWidget(lPasswd, 2, 0);
-    layout->addWidget(uname, 0, 1);
-    layout->addWidget(passwd, 2, 1);
-    layout->addWidget(pfp, 1, 1);
-    layout->addWidget(save, 3, 1);
-    layout->addWidget(cancel, 3, 0);
+    acct_layout->addWidget(lUname, 0, 0);
+    acct_layout->addWidget(lPfp, 1, 0);
+    acct_layout->addWidget(lPasswd, 2, 0);
+    acct_layout->addWidget(uname, 0, 1);
+    acct_layout->addWidget(passwd, 2, 1);
+    acct_layout->addWidget(pfp, 1, 1);
+    acct_layout->addWidget(save, 3, 1);
+    acct_layout->addWidget(cancel, 3, 0);
 
+    voice_layout->addWidget(inlabel, 0, 0);
+    voice_layout->addWidget(outlabel, 0, 1);
+    voice_layout->addWidget(inbox, 1, 0);
+    voice_layout->addWidget(outbox, 1, 1);
+
+    account->setLayout(acct_layout);
+    voice->setLayout(voice_layout);
+    
     pfp_b64 = meta->pfp_b64;
 
     connect(save,   &QPushButton::clicked, this, &SettingsMenu::saveButton);
     connect(cancel, &QPushButton::clicked, this, &SettingsMenu::backButton);
     connect(pfp,    &QPushButton::clicked, this, &SettingsMenu::pfpButton);
+    connect(inbox,  QOverload<int>::of(&QComboBox::activated), this, &SettingsMenu::inChanged);
+    connect(outbox, QOverload<int>::of(&QComboBox::activated), this, &SettingsMenu::outChanged);
+
+    addTab(account, "Account");
+    addTab(voice, "Voice");
+}
+
+void SettingsMenu::inChanged(int index) {
+    sel_in_device = inbox->itemData(index).toInt();
+}
+
+void SettingsMenu::outChanged(int index) {
+    sel_out_device = outbox->itemData(index).toInt();
+}
+
+void SettingsMenu::initialiseAudioOptions() {
+    PaDeviceIndex index = Pa_GetDeviceCount();
+    if (index < 0) {
+        //uhh error handling idk
+    }
+    for (PaDeviceIndex i = 0; i < index; i++) {
+        const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        if (info->maxOutputChannels > 0) {
+            //printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
+            outbox->addItem(QString(info->name), i);
+        }
+    }
+    for (PaDeviceIndex i = 0; i < index; i++) {
+        const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        if (info->maxInputChannels > 0) {
+            inbox->addItem(QString(info->name), i);
+        }
+    }
 }
 
 void SettingsMenu::setDefaults() {

@@ -1,7 +1,7 @@
 #ifndef __SETTINGS_H
 #define __SETTINGS_H
 
-#include <QWidget>
+#include <QTabWidget>
 #include <QString>
 
 class QLineEdit;
@@ -10,15 +10,20 @@ class QToolButton;
 class QPushButton;
 class QGridLayout;
 class ClientMeta;
+class QComboBox;
+class QTabWidget;
 
 #include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
 
-class SettingsMenu : public QWidget {
+class SettingsMenu : public QTabWidget {
     Q_OBJECT
+
+    QWidget *account;
+    QWidget *voice;
     
-    QGridLayout* layout;
+    QGridLayout* acct_layout;
     QLabel* lUname;
     QLabel* lPfp;
     QLabel* lPasswd;
@@ -30,11 +35,18 @@ class SettingsMenu : public QWidget {
     QPushButton* save;
     QPushButton* cancel;
     ClientMeta* meta;
+
+    QGridLayout* voice_layout;
+    QLabel *inlabel;
+    QLabel *outlabel;
+    QComboBox *inbox;
+    QComboBox *outbox;
     
     QString pfp_b64;
 
     void setDefaults();
-    
+private:
+    void initialiseAudioOptions();
 public:
     SettingsMenu(ClientMeta*);
 
@@ -42,6 +54,8 @@ public slots:
     void saveButton();
     void backButton();
     void pfpButton();
+    void inChanged(int index);
+    void outChanged(int index);
     
 signals:
     void unameChanged(QString);
