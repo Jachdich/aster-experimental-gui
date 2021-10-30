@@ -11,6 +11,7 @@
 #include "../include/servermodel.h"
 #include "../include/main.h"
 #include <iostream>
+#include <string.h>
 
 VcContainer::VcContainer(QWidget *parent, ServerModel *server) : QWidget(parent) {
     layout  = new QHBoxLayout();
@@ -51,7 +52,7 @@ void VcContainer::joinVoice() {
     clientthread = std::thread([this]() { vc->run(server->uuid); });
     netthread    = std::thread([this]() { ctx.run(); });
     soundthread  = std::thread([this]() {
-        PaError err = vc->audio_run();
+        PaError err = vc->audio_run(sel_in_device, sel_out_device);
         if (err != paNoError) {
             Pa_Terminate();
             fprintf(stderr, "An error occurred while using the portaudio stream\n");
@@ -78,6 +79,7 @@ MessageContainer::MessageContainer(QWidget* parent, ServerModel *server) : QWidg
 
     layout    = new QVBoxLayout();
     vc        = new VcContainer(this, server);
+    vc->hide();
 
     QScrollBar* scrollbar = scroll->verticalScrollBar();
     connect(scrollbar, &QScrollBar::rangeChanged, this, &MessageContainer::sliderRangeChanged);

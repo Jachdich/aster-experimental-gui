@@ -35,8 +35,8 @@ Q_OBJECT
 
 public:
     QSplitter *splitter;
-    MessageContainer* messages;
-    OnlineView*       online;
+    MessageContainer *messages;
+    OnlineView *online;
     std::string name = "";
     std::string ip;
     uint64_t uuid = 0;
@@ -44,7 +44,7 @@ public:
     QPixmap pfp;
     std::string pfp_b64 = "";
     std::unordered_map<uint64_t, Metadata> peers = {};
-    ClientNetwork* net = nullptr;
+    ClientNetwork *net = nullptr;
     bool isInitialised = false;
     bool isInBackground = true;
     
