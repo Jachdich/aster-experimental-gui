@@ -153,9 +153,11 @@ void MainWindow::splitChanged(int chan, int online) {
 }
 
 void MainWindow::focusInEvent() {
+    if (selectedServer <= servers.size()) return;
     servers[selectedServer]->isInBackground = false;
 }
 void MainWindow::focusOutEvent() {
+    if (selectedServer <= servers.size()) return;
     servers[selectedServer]->isInBackground = true;
 }
 
