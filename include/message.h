@@ -24,7 +24,7 @@ Q_OBJECT
     QLabel *timestamp;
     QString content_str;
     bool small = false;
-    int64_t utc;
+    long utc;
     void setTime(bool full);
 protected:
     void enterEvent(QEvent *) override;

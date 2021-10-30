@@ -219,7 +219,7 @@ void Message::setTime(bool full) {
     struct tm *time;
     struct tm ct;
     struct tm mt;
-    int64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
+    long current_time = std::chrono::duration_cast<std::chrono::seconds>(
                                std::chrono::system_clock::now().time_since_epoch()).count();
     time = localtime(&current_time);
     ct = *time;

@@ -6,9 +6,10 @@ TEMPLATE = app
 TARGET = gui
 INCLUDEPATH += include
 win32:INCLUDEPATH += ../openssl/include ../asio/include ../opus/include
-LIBS += -lssl -lcrypto -lrt -lm -lopus -lportaudio
-unix:LIBS += -lasound -ljack -pthread
-win32:LIBS += -lws2_32 ../openssl/lib/libcrypto.lib ../openssl/lib/libssl.lib
+LIBS += -lm -lopus -lportaudio
+unix:LIBS += -lssl -lcrypto -lasound -lrt -ljack -pthread
+win32:LIBS += -lssp -lstdc++fs -lws2_32 -lcrypt32 -L. -L../openssl/lib -llibssl -llibcrypto ./libopus.a ./libportaudio.a
+
 QT += widgets core multimedia
 
 # The following define makes your compiler warn you if you use any
@@ -26,6 +27,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 HEADERS += include/voiceclient.h include/main.h include/network.h include/serverbutton.h include/message.h include/metadata.h include/newserverview.h include/mainwindow.h include/messagecontainer.h include/servermodel.h include/settingsmenu.h include/channelwidget.h include/smallprofile.h include/onlineview.h
 SOURCES += src/voiceclient.cpp src/base64.cpp src/main.cpp src/message.cpp src/metadata.cpp src/serverbutton.cpp src/clientnetwork.cpp src/mainwindow.cpp src/messagecontainer.cpp src/newserverview.cpp src/servermodel.cpp src/settingsmenu.cpp src/smallprofile.cpp src/onlineview.cpp
 
-QMAKE_CXXFLAGS += -std=c++17 -g
+QMAKE_CXXFLAGS += -fstack-protector-all -std=c++17 -g
 OBJECTS_DIR = obj
 MOC_DIR = moc
+CONFIG += static

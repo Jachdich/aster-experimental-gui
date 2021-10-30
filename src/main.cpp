@@ -9,17 +9,16 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <filesystem>
 
 #include "serverbutton.h"
 #include "mainwindow.h"
 #include "base64.h"
 #include "portaudio.h"
-#include <filesystem>
+#include <experimental/filesystem>
 
 #include <regex>
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 std::string prefpath;
 std::string respath = "resources";
@@ -160,11 +159,11 @@ int main(int argc, char *argv[]) {
 
     setup_prefpath();
     setup_audio();
-    if (!std::filesystem::is_directory(std::filesystem::path(prefpath))) {
-        if (std::filesystem::exists(std::filesystem::path(prefpath))) {
+    if (!fs::is_directory(fs::path(prefpath))) {
+        if (fs::exists(fs::path(prefpath))) {
             fatalmsg("there's a file called aster at path \"" + prefpath + "\" and I dont know what it is. Please deal with it.");
         } else {
-            std::filesystem::create_directory(prefpath);
+            fs::create_directory(prefpath);
         }
     }
     

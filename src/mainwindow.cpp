@@ -9,7 +9,9 @@
 
 #include <chrono>
 #include <fstream>
-#include <filesystem>
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 #include <QLineEdit>
 #include <QVBoxLayout>
@@ -192,7 +194,7 @@ void MainWindow::save() {
     std::ifstream lock(prefpath + pathsep + "preferences.lock");
     if (lock.good()) {
 	    lock.close();
-        std::filesystem::remove(std::filesystem::path(prefpath + pathsep + "preferences.lock"));
+        fs::remove(fs::path(prefpath + pathsep + "preferences.lock"));
     } else {
         std::cout << "Something horrible happened, and preferences.lock was removed while the program is running! RISK OF CORRUPTION!\n";
         //we got some serious avengers level threat if the file has been removed before the program has terminated
