@@ -97,13 +97,22 @@ static int pa_write_callback(const void *input, void *output,
 
 PaError VoiceClient::audio_run(PaDeviceIndex in, PaDeviceIndex out) {
     PaError err;
-    const PaDeviceInfo* ininfo = Pa_GetDeviceInfo(in);
-    const PaDeviceInfo* outinfo = Pa_GetDeviceInfo(out);
+    const PaDeviceInfo *ininfo = Pa_GetDeviceInfo(in);
+    const PaDeviceInfo *outinfo = Pa_GetDeviceInfo(out);
+    const PaDeviceInfo *d = ininfo;
+    printf("%s %d %d %lf %lf %lf %lf %lf\n", d->name, d->maxInputChannels, d->maxOutputChannels, d->defaultLowInputLatency, d->defaultLowOutputLatency, d->defaultHighInputLatency, d->defaultHighOutputLatency, d->defaultSampleRate);
+    d = outinfo;
+    printf("%s %d %d %lf %lf %lf %lf %lf\n", d->name, d->maxInputChannels, d->maxOutputChannels, d->defaultLowInputLatency, d->defaultLowOutputLatency, d->defaultHighInputLatency, d->defaultHighOutputLatency, d->defaultSampleRate);
+    printf("%lf %lf\n", ininfo->defaultSampleRate, outinfo->defaultSampleRate);
     PaStreamParameters inparams = {in, 1, FORMAT, ininfo->defaultLowInputLatency, NULL};
     PaStreamParameters outparams = {out, 1, FORMAT, outinfo->defaultLowOutputLatency, NULL};
     
-    err = Pa_OpenStream(&instream,  &inparams,  NULL, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_read_callback, this); ERRHANDLE(err);
-    err = Pa_OpenStream(&outstream, NULL, &outparams, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_write_callback, this); ERRHANDLE(err);
+    err = Pa_OpenStream(&instream,  &inparams,  NULL, SAMPLE_RATE, paFramesPerBufferUnspecified, paNoFlag, pa_read_callback, this); ERRHANDLE(err);
+    printf("Made it this far\n");
+    err = Pa_OpenStream(&outstream, NULL, &outparams, SAMPLE_RATE, paFramesPerBufferUnspecified, paNoFlag, pa_write_callback, this); ERRHANDLE(err);
+    printf("even further wowee\n");
+    //err = Pa_OpenDefaultStream(&instream,  1, 0, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_read_callback,  this); ERRHANDLE(err);
+    //err = Pa_OpenDefaultStream(&outstream, 0, 1, FORMAT, SAMPLE_RATE, paFramesPerBufferUnspecified, pa_write_callback, this); ERRHANDLE(err);
     err = Pa_StartStream(instream);  ERRHANDLE(err);
     err = Pa_StartStream(outstream); ERRHANDLE(err);
     while (!stopped) {

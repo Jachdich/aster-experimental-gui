@@ -54,7 +54,6 @@ void VcContainer::joinVoice() {
     soundthread  = std::thread([this]() {
         PaError err = vc->audio_run(sel_in_device, sel_out_device);
         if (err != paNoError) {
-            Pa_Terminate();
             fprintf(stderr, "An error occurred while using the portaudio stream\n");
             fprintf(stderr, "Error number: %d\n", err);
             fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
