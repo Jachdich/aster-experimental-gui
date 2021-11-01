@@ -92,18 +92,21 @@ void SettingsMenu::outChanged(int index) {
 void SettingsMenu::initialiseAudioOptions() {
     PaDeviceIndex index = Pa_GetDeviceCount();
     if (index < 0) {
+        printf("Some error: %s\n", Pa_GetErrorText(index));
         //uhh error handling idk
     }
     for (PaDeviceIndex i = 0; i < index; i++) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
         if (info->maxOutputChannels > 0) {
-            //printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
             outbox->addItem(QString(info->name), i);
         }
     }
+    printf("\n");
     for (PaDeviceIndex i = 0; i < index; i++) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
+            printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
             inbox->addItem(QString(info->name), i);
         }
     }

@@ -8,7 +8,7 @@ INCLUDEPATH += include
 win32:INCLUDEPATH += ../openssl/include ../asio/include ../opus/include
 LIBS += -lm -lopus -lportaudio
 unix:LIBS += -lssl -lcrypto -lasound -lrt -ljack -pthread
-win32:LIBS += -lssp -lstdc++fs -lws2_32 -lcrypt32 -L. -L../openssl/lib -llibssl -llibcrypto ./libopus.a ./libportaudio.a
+win32:LIBS += -lwinmm -lssp -lstdc++fs -lws2_32 -lcrypt32 -L. -L../openssl/lib -llibssl -llibcrypto ./libopus.a ./libportaudio.a
 
 QT += widgets core multimedia
 

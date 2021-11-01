@@ -176,7 +176,7 @@ void playPingSound() {
 
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
-    std::cout << data.toUtf8().constData() << "\n";
+//    std::cout << data.toUtf8().constData() << "\n";
     if (!msg["history"].is_null()) {
         uint32_t pos = 0;
         for (auto &elem : msg["history"]) {

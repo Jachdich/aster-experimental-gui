@@ -150,6 +150,8 @@ void setup_audio() {
         char buffer[2048];
         sprintf(buffer, "Aster couldn't initialise the audio subsystem, for some reason. this should never happen. traceback:\n%s", Pa_GetErrorText(err));
         fatalmsg(std::string(buffer));
+    } else {
+	printf("PortAudio initialised correctly\n");
     }
 }
 
