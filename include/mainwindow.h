@@ -46,6 +46,7 @@ public:
     void insertMessage(uint32_t pos, Message *msg);
     void handleServerClick(ServerButton* button);
     void save();
+    void unlock();
     void focusInEvent();
     void focusOutEvent();
     

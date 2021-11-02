@@ -10,20 +10,19 @@
 #include <sstream>
 #include <string>
 
+#include "main.h"
+
 #include "serverbutton.h"
 #include "mainwindow.h"
 #include "base64.h"
 #include "portaudio.h"
-#include <experimental/filesystem>
 
 #include <regex>
 
-namespace fs = std::experimental::filesystem;
-
 std::string prefpath;
 std::string respath = "resources";
-PaDeviceIndex sel_in_device  = 0;
-PaDeviceIndex sel_out_device = 0;
+PaDeviceIndex sel_in_device  = -1;
+PaDeviceIndex sel_out_device = -1;
 
 #ifdef __linux__
 #include <unistd.h>
@@ -62,14 +61,14 @@ void setup_prefpath() {
         homedir = getpwuid(getuid())->pw_dir;
     }
 
-    if (std::filesystem::exists("preferences.json")) {
+    if (fs::exists("preferences.json")) {
         prefpath = ".";
     } else {
         prefpath = std::string(homedir) + "/.config/aster";
     }
     respath = "";
     for (std::string searchdir : {"./resources", "/usr/share/aster", "/usr/local/share/aster"}) {
-        if (std::filesystem::is_directory(std::filesystem::path(searchdir))) {
+        if (fs::is_directory(fs::path(searchdir))) {
             respath = searchdir;
             break;
         }
@@ -188,6 +187,7 @@ int main(int argc, char *argv[]) {
 
     int32_t ret = app.exec();
     window.save();
+    window.unlock();
     Pa_Terminate();
     exit(ret);
 }
