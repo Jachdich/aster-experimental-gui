@@ -20,11 +20,13 @@
 
 #include "../include/base64.h"
 #include "../include/portaudio.h"
+#include "../include/mainwindow.h"
 #include <string>
 #include <vector>
 
-SettingsMenu::SettingsMenu(ClientMeta *meta) {
+SettingsMenu::SettingsMenu(ClientMeta *meta, MainWindow *mw) {
     this->meta = meta;
+    this->mw = mw;
     account = new QWidget(this);
     voice = new QWidget(this);
     
@@ -83,33 +85,54 @@ SettingsMenu::SettingsMenu(ClientMeta *meta) {
 
 void SettingsMenu::inChanged(int index) {
     sel_in_device = inbox->itemData(index).toInt();
+    mw->save();
 }
 
 void SettingsMenu::outChanged(int index) {
     sel_out_device = outbox->itemData(index).toInt();
+    mw->save();
 }
 
 void SettingsMenu::initialiseAudioOptions() {
+    PaDeviceIndex indefault = Pa_GetDefaultInputDevice();
+    PaDeviceIndex outdefault = Pa_GetDefaultOutputDevice();
+    
     PaDeviceIndex index = Pa_GetDeviceCount();
+
+    //do the currently set sel_in_device and out_sel_device make sense?
+    //check if they are contained in the device list
+    bool in_contains = false;
+    bool out_contains = false;
+    
     if (index < 0) {
         printf("Some error: %s\n", Pa_GetErrorText(index));
         //uhh error handling idk
     }
+    
     for (PaDeviceIndex i = 0; i < index; i++) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
-        printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
         if (info->maxOutputChannels > 0) {
+            out_contains = out_contains || (i == sel_out_device);
+            printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
             outbox->addItem(QString(info->name), i);
         }
     }
+
     printf("\n");
     for (PaDeviceIndex i = 0; i < index; i++) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
+            in_contains = in_contains || (i == sel_in_device);
             printf("%d: %-48s %d %d\n", i, info->name, info->maxInputChannels, info->maxOutputChannels);
             inbox->addItem(QString(info->name), i);
         }
     }
+
+    if (!in_contains) sel_in_device = indefault;
+    if (!out_contains) sel_out_device = outdefault;
+
+    outbox->setCurrentIndex(outbox->findData(sel_out_device));
+    inbox->setCurrentIndex(inbox->findData(sel_in_device));
 }
 
 void SettingsMenu::setDefaults() {
@@ -138,6 +161,7 @@ void SettingsMenu::saveButton() {
     emit pfpChanged(pfp_b64);
     emit passwdChanged(passwd->text());
     hide();
+    mw->save();
 }
 
 void SettingsMenu::backButton() {

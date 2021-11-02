@@ -12,11 +12,11 @@ class QGridLayout;
 class ClientMeta;
 class QComboBox;
 class QTabWidget;
+class MainWindow;
 
 #include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
-
 class SettingsMenu : public QTabWidget {
     Q_OBJECT
 
@@ -35,6 +35,7 @@ class SettingsMenu : public QTabWidget {
     QPushButton* save;
     QPushButton* cancel;
     ClientMeta* meta;
+    MainWindow *mw;
 
     QGridLayout* voice_layout;
     QLabel *inlabel;
@@ -48,7 +49,7 @@ class SettingsMenu : public QTabWidget {
 private:
     void initialiseAudioOptions();
 public:
-    SettingsMenu(ClientMeta*);
+    SettingsMenu(ClientMeta*, MainWindow*);
 
 public slots:
     void saveButton();

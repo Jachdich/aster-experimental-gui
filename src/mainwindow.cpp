@@ -9,9 +9,6 @@
 
 #include <chrono>
 #include <fstream>
-#include <experimental/filesystem>
-
-namespace fs = std::experimental::filesystem;
 
 #include <QLineEdit>
 #include <QVBoxLayout>
@@ -52,6 +49,8 @@ MainWindow::MainWindow() {
     value["pfp"] = defaultPfp;
     value["chan_split"] = 128;
     value["online_split"] = 196;
+    value["indevice"] = -1;
+    value["outdevice"] = -1;
 
     if (ifs_preferences.good()) {
         std::string content((std::istreambuf_iterator<char>(ifs_preferences)),
@@ -72,6 +71,9 @@ MainWindow::MainWindow() {
     meta.uname   = QString::fromStdString(value["uname"].get<std::string>());
     meta.pfp_b64 = QString::fromStdString(value["pfp"].get<std::string>());
     meta.passwd  = QString::fromStdString(value["passwd"].get<std::string>());
+
+    sel_in_device = value["indevice"].get<int>();
+    sel_out_device = value["outdevice"].get<int>();
 
     serverButtonLayout = new QHBoxLayout();
     serverContentLayout = new QStackedLayout();
@@ -124,7 +126,7 @@ MainWindow::MainWindow() {
     layout = new QVBoxLayout(this);
 
     nsv = new NewServerView();
-    settings = new SettingsMenu(&meta);
+    settings = new SettingsMenu(&meta, this);
 
     input = new QLineEdit();
     layout->addLayout(serverButtonLayout);
@@ -172,7 +174,16 @@ void MainWindow::updateMeta() {
 }
 
 void MainWindow::save() {
+    /*
+    std::ifstream lock(prefpath + pathsep + "preferences.lock");
+    if (lock.good()) {
+        safeToSave = true;
+    } else {
+        safeToSave = 
+    }*/
+    //TODO the lock could have been taken by someone else!
     std::cout << safeToSave << "\n";
+    
     if (!safeToSave) return;
     json result = json::object();
     result["uname"] = meta.uname.toUtf8().constData();
@@ -180,6 +191,8 @@ void MainWindow::save() {
     result["pfp"] = meta.pfp_b64.toUtf8().constData();
     result["chan_split"] = chan_split;
     result["online_split"] = online_split;
+    result["indevice"] = sel_in_device;
+    result["outdevice"] = sel_out_device;
     
     result["servers"] = json::array();
     for (ServerModel* server : servers) {
@@ -193,6 +206,9 @@ void MainWindow::save() {
     }
     std::ofstream os(prefpath + pathsep + "preferences.json");
     os << result.dump();
+}
+
+void MainWindow::unlock() {
     std::ifstream lock(prefpath + pathsep + "preferences.lock");
     if (lock.good()) {
 	    lock.close();
@@ -292,6 +308,7 @@ void MainWindow::addNewServer(QString ip, uint16_t port, uint64_t uuid) {
         msg.exec();
     }
     closeNewServerView();
+    save();
 }
 
 void MainWindow::onServerInitialised(ServerModel* server, bool active) {
