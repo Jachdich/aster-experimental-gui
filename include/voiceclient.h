@@ -38,6 +38,7 @@ struct VoicePeer {
 
 class VoiceClient {
 public:
+	int16_t i = 0;
     udp::socket sock;
     udp::endpoint endp;
     OpusEncoder *enc;

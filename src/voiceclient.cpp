@@ -1,10 +1,10 @@
 #include "../include/voiceclient.h"
 
 enum {
-    REQ_ACK,
-    REQ_ADATA,
-    REQ_IDENT,
-    REQ_END
+    REQ_ACK = 0,
+    REQ_ADATA = 1,
+    REQ_IDENT = 2,
+    REQ_END = 3
 };
 
 #define FORMAT paInt16
@@ -124,13 +124,25 @@ PaError VoiceClient::audio_run(PaDeviceIndex in, PaDeviceIndex out) {
     err = Pa_CloseStream(outstream); ERRHANDLE(err);
     return paNoError;
 }
+
+#include <iostream>
+
 void VoiceClient::start_recv() {
+    printf("Start recv\n");
+    std::cout << endp << "\n";
+    /*
     sock.async_receive_from(
-        asio::buffer(netbuf, MAX_FRAME_SIZE), endp,
+        asio::buffer(netbuf, MAX_FRAME_SIZE),
+        endp,
         [this](const asio::error_code &ec, size_t bytes) {
             this->handle_recv(ec, bytes);
         }
-    );
+    );*/
+    while(!stopped || send_end) {
+        asio::error_code ec;
+        size_t len = sock.receive_from(asio::buffer(netbuf, MAX_FRAME_SIZE), endp);
+        handle_recv(ec, len);
+    }
 }
 
 VoicePeer::VoicePeer() {
@@ -139,10 +151,11 @@ VoicePeer::VoicePeer() {
 
 void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
     if (ec) {
-        fprintf(stderr, "ERROR: %s\n", ec.message().c_str());
+        fprintf(stderr, "ERROR (Recv): %s\n", ec.message().c_str());
     } else {
 
         uint8_t req = netbuf[0];
+        printf("handle_recv %d\n", req);
         if (req == REQ_ACK) {
             printf("Got ack\n");
             if (send_ident) {
@@ -168,7 +181,7 @@ void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
                 fprintf(stderr, "decoder failed: %s\n", opus_strerror(frame_size));
                 exit(1);
             }
-            
+
             std::lock_guard<std::mutex> lock(peer.outm);
             for (int i = 0; i < frame_size; i++) {
                 peer.outbuf.push_front(out[i]);
@@ -176,9 +189,9 @@ void VoiceClient::handle_recv(const asio::error_code &ec, size_t nBytes) {
         } else {
             printf("Got spurious request of type %d\n", req);
         }
-        
+
         if (!stopped || send_end) {
-            start_recv();
+            //start_recv();
         }
     }
 }
@@ -193,6 +206,7 @@ VoiceClient::VoiceClient(asio::io_context &ctx) : sock(ctx) {
         printf("Error: Couldn't connec to voice server: %s\n", ec.message().c_str());
     }
     sock.open(udp::v4());
+    sock.set_option(asio::ip::udp::socket::reuse_address(true));
 }
 
 
@@ -201,9 +215,11 @@ void VoiceClient::run(uint64_t uuid) {
 
     unsigned char cbits[MAX_PACKET_SIZE];
     int nBytes;
+    //TODO bad idea
+    int end_iters = 0;
     //setup_opus(&enc, &dec);
 
-    while (!stopped || send_end) {
+    while ((!stopped || send_end) && end_iters <= 20) {
         //sanity check: Sometimes, it can be requested to stop before/during ident period, just discard the ident req
         if (send_end && send_ident) send_ident = 0;
         if (send_ident) {
@@ -215,6 +231,7 @@ void VoiceClient::run(uint64_t uuid) {
         } else if (send_end) {
             uint8_t data[1] = {REQ_END};
             printf("Sending end\n");
+            end_iters++;
             sock.send_to(asio::buffer(data, 1), endp);
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         } else {

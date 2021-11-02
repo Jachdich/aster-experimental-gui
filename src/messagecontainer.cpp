@@ -33,9 +33,9 @@ VcContainer::~VcContainer() {
     delete join;
     delete leave;
     if (vc != NULL) {
-	    vc->stop();
-	    delete vc;
-	}
+        vc->stop();
+        delete vc;
+    }
 }
 
 void VcContainer::changeChannel(const std::string &newChannel) {
@@ -44,21 +44,23 @@ void VcContainer::changeChannel(const std::string &newChannel) {
 
 void VcContainer::joinVoice() {
     server->net->sendRequest("/joinvoice " + channel);
-    ctx.restart();
+//    ctx.restart();
+//    asio::executor_work_guard<decltype(ctx.get_executor())> work{ctx.get_executor()};
     vc = new VoiceClient(ctx);
     setup_opus(&vc->enc, NULL);
-    vc->start_recv();
+    //vc->start_recv();
 
     clientthread = std::thread([this]() { vc->run(server->uuid); });
-    netthread    = std::thread([this]() { ctx.run(); });
+//    netthread    = std::thread([this]() { printf("Running ctx\n"); ctx.run(); printf("Ctx finished running\n"); });
+    netthread    = std::thread([this]() { printf("Running ctx\n"); vc->start_recv(); printf("Ctx finished running\n"); });
     soundthread  = std::thread([this]() {
         PaError err = vc->audio_run(sel_in_device, sel_out_device);
         if (err != paNoError) {
             fprintf(stderr, "An error occurred while using the portaudio stream\n");
-            fprintf(stderr, "Error number: %d\n", err);
             fprintf(stderr, "Error message: %s\n", Pa_GetErrorText(err));
         }
     });
+    printf("joinVoice() returning\n");
 }
 
 void VcContainer::leaveVoice() {
