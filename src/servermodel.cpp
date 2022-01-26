@@ -156,7 +156,8 @@ void ServerModel::addMessage(Message* msg) {
     messages->addMessage(msg);
 }
 
-void ServerModel::addChannel(std::string name) {
+void ServerModel::addChannel(json data) {
+    std::string name = data["name"].get<std::string>();
 	QListWidgetItem* item = new QListWidgetItem(QString::fromStdString(name), channels);
 	QLabel* l = new QLabel(QString::fromStdString(name)); //TODO this is a memory leak
 	channelWidgets.push_back(l);
@@ -176,18 +177,19 @@ void playPingSound() {
 
 void ServerModel::handleNetwork(QString data) {
     json msg = json::parse(data.toUtf8().constData());
-//    std::cout << data.toUtf8().constData() << "\n";
-    if (!msg["history"].is_null()) {
-        uint32_t pos = 0;
-        for (auto &elem : msg["history"]) {
-            messages->insertMessage(pos++, new Message(this,
-                            peers[elem["author_uuid"].get<uint64_t>()],
-                            QString::fromStdString(elem["content"].get<std::string>()),
-                            peers[elem["author_uuid"].get<uint64_t>()].pfp,
-                            elem["date"].get<int64_t>()));
-        }
-    } else if (!msg["command"].is_null()) {
-        if (msg["command"].get<std::string>() == "set") {
+    // std::cout << data.toUtf8().constData() << "\n";
+
+    if (!msg["command"].is_null()) {
+        if (msg["command"].get<std::string>() == "history") {
+            uint32_t pos = 0;
+            for (auto &elem : msg["data"]) {
+                messages->insertMessage(pos++, new Message(this,
+                                peers[elem["author_uuid"].get<uint64_t>()],
+                                QString::fromStdString(elem["content"].get<std::string>()),
+                                peers[elem["author_uuid"].get<uint64_t>()].pfp,
+                                elem["date"].get<int64_t>()));
+            }
+        } else if (msg["command"].get<std::string>() == "set") {
             if (msg["key"].get<std::string>() == "self_uuid") {
                 uuid = msg["value"].get<uint64_t>();
             }
@@ -211,7 +213,7 @@ void ServerModel::handleNetwork(QString data) {
             name = msg["data"].get<std::string>();
         } else if (msg["command"].get<std::string>() == "get_channels") {
             for (auto &elem : msg["data"]) {
-                addChannel(elem.get<std::string>());
+                addChannel(elem);
             }
         } else if (msg["command"].get<std::string>() == "unread") {
         	std::string channel = msg["channel"].get<std::string>();
@@ -231,24 +233,27 @@ void ServerModel::handleNetwork(QString data) {
             }
         } else if (msg["command"].get<std::string>() == "pong") {
             //not sure
+        } else if (msg["command"].get<std::string>() == "ping") {
+            //tell the server we're alive
+            net->sendRequest("pong");
+        } else if (msg["command"].get<std::string>() == "content") {
+            std::string content = msg["content"].get<std::string>();
+    
+            messages->addMessage(new Message(this,
+                peers[msg["author_uuid"].get<uint64_t>()], //https://xkcd.com/xxxx/info.0.json
+    
+                QString::fromStdString(content),
+                peers[msg["author_uuid"].get<uint64_t>()].pfp,
+                msg["date"].get<int64_t>()));
+            if (isInBackground) {
+                playPingSound();
+            }
         }
         if (!isInitialised) {
             if (uuid != 0 && name != "" && pfp_b64 != "") {
                 emit initialised(this, true);
                 isInitialised = true;
             }
-        }
-    } else if (!msg["content"].is_null()) {
-        std::string content = msg["content"].get<std::string>();
-
-        messages->addMessage(new Message(this,
-            peers[msg["author_uuid"].get<uint64_t>()], //https://xkcd.com/xxxx/info.0.json
-
-            QString::fromStdString(content),
-            peers[msg["author_uuid"].get<uint64_t>()].pfp,
-            msg["date"].get<int64_t>()));
-        if (isInBackground) {
-            playPingSound();
         }
     } else {
         //???

@@ -13,6 +13,8 @@ class ClientMeta;
 class QComboBox;
 class QTabWidget;
 class MainWindow;
+class AccountTab;
+class VoiceTab;
 
 #include "nlohmann/json.hpp"
 
@@ -20,30 +22,8 @@ using json = nlohmann::json;
 class SettingsMenu : public QTabWidget {
     Q_OBJECT
 
-    QWidget *account;
-    QWidget *voice;
-    
-    QGridLayout* acct_layout;
-    QLabel* lUname;
-    QLabel* lPfp;
-    QLabel* lPasswd;
-
-    QLineEdit* uname;
-    QLineEdit* passwd;
-    QPushButton* pfp;
-
-    QPushButton* save;
-    QPushButton* cancel;
-    ClientMeta* meta;
-    MainWindow *mw;
-
-    QGridLayout* voice_layout;
-    QLabel *inlabel;
-    QLabel *outlabel;
-    QComboBox *inbox;
-    QComboBox *outbox;
-    
-    QString pfp_b64;
+    AccountTab *account;
+    VoiceTab *voice;
 
     void setDefaults();
 private:
@@ -51,13 +31,6 @@ private:
 public:
     SettingsMenu(ClientMeta*, MainWindow*);
 
-public slots:
-    void saveButton();
-    void backButton();
-    void pfpButton();
-    void inChanged(int index);
-    void outChanged(int index);
-    
 signals:
     void unameChanged(QString);
     void pfpChanged(QString);

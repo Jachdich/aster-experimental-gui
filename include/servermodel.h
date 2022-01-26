@@ -25,7 +25,7 @@ class QSplitter;
 class ServerModel : public QWidget {
 Q_OBJECT
 
-    void addChannel(std::string name);
+    void addChannel(json name);
     void changeChannel(QListWidgetItem *current, QListWidgetItem *previous);
     QHBoxLayout* layout;
     QListWidget* channels;
